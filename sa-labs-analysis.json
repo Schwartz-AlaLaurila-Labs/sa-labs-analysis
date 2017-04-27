@@ -1,0 +1,63 @@
+[
+	{
+		"extra": "",
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "sa-labs-analysis",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis"
+	},
+	{
+		"extra": "",
+		"flavor": "master",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "sa-labs-analysis-core",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "",
+		"toolboxRoot": "lib",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-core"
+	},
+	{
+		"extra": "",
+		"flavor": "master",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "sa-labs-util",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "",
+		"toolboxRoot": "lib",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-util"
+	},
+    {
+		"extra": "",
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "app-toolboxes",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "include",
+		"update": "",
+	    "url": ""
+	}
+
+]

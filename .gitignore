@@ -1,0 +1,16 @@
+# Matlab autosave files
+*.asv
+
+# OS X stores
+*.DS_Store
+
+# Binary
+*.mlappinstall
+*.h5
+*.mat
+target/
+
+# Logs
+*.log
+logs/
+lib/
