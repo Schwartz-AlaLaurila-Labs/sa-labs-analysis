@@ -16,7 +16,7 @@
 	},
 	{
 		"extra": "",
-		"flavor": "master",
+		"flavor": "",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
@@ -24,14 +24,14 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "lib",
+		"toolboxRoot": "../",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-core"
 	},
 	{
 		"extra": "",
-		"flavor": "master",
+		"flavor": "",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
@@ -39,7 +39,7 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "lib",
+		"toolboxRoot": "../",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-util"

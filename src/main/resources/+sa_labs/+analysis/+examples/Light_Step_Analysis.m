@@ -1,20 +1,10 @@
 %%
-tbUseProject('sa-labs-analysis');
-
+tbUseProject('sa-labs-analysis', 'online', false);
+%%
 clear;
-import sa_labs.analaysis.*
-
-PROJECT_ID = 'Example-LightStep-Analysis';
-experimentDate = '20170407'; 
-
-createAnalysisProject('20170407', PROJECT_ID); 
+project = createAnalysisProject('Example-LightStep-Analysis', 'experiments', '20170407') %#ok
 
 %%
 
-manager = getAnalysisManager();
-project = manager.initializeProject(PROJECT_ID);
-
-preProcessors = {@(d) addSpikesToEpoch(d)};
-cellfun(@(data) manager.preProcess(data, preProcessors), project.getCellDataList());
 
 %%
