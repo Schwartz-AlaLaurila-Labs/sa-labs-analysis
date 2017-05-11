@@ -10,11 +10,11 @@ else
     device = ip.Results.device;
 end
 
-id = strcat('SPIKES_', upper(device));
+id = strcat('SPIKES', upper(device));
 
 for epoch = analysis.getEpochs(group)
     data = epoch.get(id);
-    featureGroup.createFeature(id, data);
+    group.createFeature(id, data);
 end
 end
 

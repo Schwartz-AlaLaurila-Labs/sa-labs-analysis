@@ -15,10 +15,16 @@ for epoch = cellData.epochs
             spikeTime =  mht.spike_util.detectSpikes(data, 'checkDetection', checkDetection);
             id = strcat('SPIKES', upper(device));
             epoch.add(id, spikeTime);
-        catch
-            disp(exception.message);
+            
+            label = epoch.get('recordingLabel');
+            number = epoch.get('epochNum');
+            if checkDetection
+                disp(['cell:',label{1},' epoch:', num2str(number),' ', device]);
+            end
+            close(gcf);
+        catch e
+            disp(e.message);
         end
     end
-end
 end
 
