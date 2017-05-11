@@ -1,21 +1,14 @@
 function extractSpikes(analysis, group, varargin)
 
-ip = inputParser;
-ip.addParameter('device', '', @ischar);
-ip.parse(varargin{:});
+device = analysis.getDeviceForGroup(group);
 
-if strcmpi(group.splitParameter, 'devices')
-    device = group.splitValue;
-else
-    device = ip.Results.device;
+epochs = analysis.getEpochs(group);
+n = numel(epochs);
+spikes = cell(0, n);
+for i = 1 : n  
+    spikes{i} = epochs(i).getDerivedResponse(device, 'SPIKES');
 end
-
-id = strcat('SPIKES', upper(device));
-
-for epoch = analysis.getEpochs(group)
-    data = epoch.get(id);
-    group.createFeature(id, data);
-end
+group.createFeature('SPIKES', spikes, 'device', device);
 end
 
 
