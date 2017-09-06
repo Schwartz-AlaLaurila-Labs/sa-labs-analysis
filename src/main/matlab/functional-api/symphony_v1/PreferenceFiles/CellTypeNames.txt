@@ -1,0 +1,42 @@
+ON alpha
+OFF transient alpha
+OFF sustained alpha
+ON high speed sensitive
+OFF transient high speed sensitive
+ON WFDS
+OFF WFDS
+UltraLowDefinition
+ON-OFF DS sustained
+ON-OFF DS transient
+ON DS sustained
+ON sustained non-alpha
+ON sustained ODB
+LED
+HighDefinition_1
+HighDefinition_2
+Ultra_HighDef
+Suppressed by contrast
+ON delayed
+ON OS
+ON small OFF large 
+ON-OFF OS type2
+OFF OS
+F-mini OFF
+ChR2+ RGC
+Melanopsin M1
+M2
+Large bursty
+ON bursty
+ON transformer
+unidentified RGC
+CRH-1 amacrine
+ON sustained OS amacrine
+Spider amacrine
+nNos-1 amacrine - A1
+nNos-2 amacrine - ON bowtie
+nNos-3 amacrine - A1-like OS
+nNos-4 amacrine - OFF symmetric 
+nNos-5 amacrine - OFF bowtie
+ChR2+ amacrine
+bad recording
+unidentified amacrine

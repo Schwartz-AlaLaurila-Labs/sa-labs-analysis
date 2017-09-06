@@ -1,0 +1,11 @@
+QualityRating	4	3	2	1
+CellClass	RGC	amacrine	bipolar
+BadResponseQuality	1
+CelltypeDoubt	1
+CuratedForTypology	1
+RecordedBy	Greg	Jason	Adam	Amurta	Sam	Mike	David
+CuratedForTypology	1
+Genotype	nNos	CRH	CRH-ChR2-Ai27	nonCarrier	WT
+CellClass	RGC	amacrine	bipolar
+SbCpaper_contrastResp	1
+CRH_ablation_cell	1

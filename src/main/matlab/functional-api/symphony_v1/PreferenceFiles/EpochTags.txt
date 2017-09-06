@@ -1,0 +1,16 @@
+ExcessDataSetForCell	1
+LS_standard200	1
+LS_standard	1
+ExcessDataSetForCell	1
+Checked013015	1
+Checked020915	1
+Checked030615	1
+CelltypeDoubt	1
+ONOS_ContrastResp	1
+ONOS_SpotsMultiSize	1
+ONOS_LightStep	1	2	3
+ONOS_FlashedBars	1
+ONOS_MovingBar	1
+
+
+
