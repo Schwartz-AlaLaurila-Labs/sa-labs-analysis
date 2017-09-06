@@ -44,6 +44,21 @@
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-util"
 	},
+	{
+		"extra": "",
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "preference",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "data",
+		"toolboxRoot": "src/main/resources",
+		"type": "git",
+		"update": "",
+	    "url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-preference"
+	},
     {
 		"extra": "",
 		"flavor": "",
