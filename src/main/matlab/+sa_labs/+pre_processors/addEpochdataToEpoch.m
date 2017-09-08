@@ -1,20 +1,18 @@
-function addSpikesToEpoch(cellData, varargin)
+function addEpochdataToEpoch(cellData, varargin)
 
 ip = inputParser;
 ip.addParameter('devices', {'Amp1'}, @iscellstr);
 ip.addParameter('checkDetection', false, @islogical);
-
-
 ip.parse(varargin{:});
 devices = ip.Results.devices;
 checkDetection = ip.Results.checkDetection;
+
 
 for epoch = cellData.epochs
     for device = each(devices)
         try
             data = epoch.getResponse(device).quantity;
-            spikeTime =  mht.spike_util.detectSpikes(data, 'checkDetection', checkDetection);
-            epoch.addDerivedResponse(device, 'SPIKES', spikeTime);
+            epoch.addDerivedResponse(device, 'EPOCH', data);
             
             label = epoch.get('recordingLabel');
             number = epoch.get('epochNum');
