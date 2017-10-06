@@ -14,7 +14,7 @@ for epoch = cellData.epochs
         try
             data = epoch.getResponse(device).quantity;
             spikeTime =  mht.spike_util.detectSpikes(data, 'checkDetection', checkDetection);
-            epoch.addDerivedResponse(device, 'SPIKES', spikeTime);
+            epoch.addDerivedResponse('SPIKES', spikeTime, device);
             
             label = epoch.get('recordingLabel');
             number = epoch.get('epochNum');

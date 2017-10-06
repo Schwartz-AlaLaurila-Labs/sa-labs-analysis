@@ -1,7 +1,7 @@
 ctx = struct();
 
 ctx.fileRepository.class = 'sa_labs.analysis.app.FileRepository';
-
+ctx.fileRepository.analysisFolder = 'D:\analysis';
 ctx.analysisDao.class = 'sa_labs.analysis.dao.AnalysisFolderDao';
 ctx.analysisDao.repository = 'fileRepository';
 
