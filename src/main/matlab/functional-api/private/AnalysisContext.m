@@ -1,6 +1,9 @@
 ctx = struct();
 
 ctx.fileRepository.class = 'sa_labs.analysis.app.FileRepository';
+% ctx.fileRepository.analysisFolder = 'R:\ala-laurila_lab\users\narayas2';
+% ctx.fileRepository.rawDataFolder = 'R:\ala-laurila_lab\data\takeshd1\rawdata';
+
 ctx.analysisDao.class = 'sa_labs.analysis.dao.AnalysisFolderDao';
 ctx.analysisDao.repository = 'fileRepository';
 
