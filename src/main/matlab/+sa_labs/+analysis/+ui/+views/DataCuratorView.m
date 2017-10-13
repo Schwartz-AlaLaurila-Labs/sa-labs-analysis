@@ -1,24 +1,24 @@
 classdef DataCuratorView < appbox.View
     
     events
-        BrowseLocation
+        LoadH5File
         SelectedFilter
         ReParse
-        SaveConfiguredFilter
         SelectedNodes
         SelectedEpochSignals
-        SetEpochSignalConfigurationSetting
+        SetPreProcessorParameters
         UnlockEpochSignalConfigurationSettings
         SelectedPreProcessor
         ExecutePreProcessor
+        SaveConfiguredFilter
         AddKeyValue
         SelectedDeleteParameters
         DeleteKeys
     end
     
     properties (Access = private)
-        browseLocationButton
-        locationField
+        h5FileName
+        loadH5FileButton
         reparseButton
         measurementTable
         availablefilterMenu
@@ -26,11 +26,13 @@ classdef DataCuratorView < appbox.View
         saveFilter
         infoText
         entityTree
+        cellFolderNode
         detailCardPanel
         availablePreProcessorFunctions
+        preProcessorPropertyGrid
         executePreProcessorButton
         availableSignals
-        epochCard
+        plotCard
         keyField1
         valueField1
         keyField2
@@ -46,7 +48,7 @@ classdef DataCuratorView < appbox.View
         
         function createUi(obj)
             import appbox.*;
-            import sa_labs.ui.EntityNodeType;
+            import sa_labs.analysis.ui.views.EntityNodeType;
             
             set(obj.figureHandle, ...
                 'Name', 'Data Curator', ...
@@ -61,16 +63,16 @@ classdef DataCuratorView < appbox.View
                 'Padding', 11);
             Label( ...
                 'Parent', cellInfoLayout, ...
-                'String', 'H5 File Location:');
-            obj.locationField = uicontrol( ...
+                'String', 'H5 File Name:');
+            obj.h5FileName = uicontrol( ...
                 'Parent', cellInfoLayout, ...
                 'Style', 'edit', ...
                 'HorizontalAlignment', 'left');
-            obj.browseLocationButton = uicontrol( ...
+            obj.loadH5FileButton = uicontrol( ...
                 'Parent', cellInfoLayout, ...
                 'Style', 'pushbutton', ...
-                'String', '...', ...
-                'Callback', @(h,d)notify(obj, 'BrowseLocation'));
+                'String', 'Load', ...
+                'Callback', @(h,d)notify(obj, 'LoadH5File'));
             uix.Empty('Parent', cellInfoLayout);
             obj.reparseButton = uicontrol( ...
                 'Parent', cellInfoLayout, ...
@@ -113,7 +115,8 @@ classdef DataCuratorView < appbox.View
                 'Parent', root, ...
                 'Name', 'Cells', ...
                 'Value', struct('entity', [], 'type', EntityNodeType.CELLS));
-            
+            obj.cellFolderNode = cells;
+
             detailLayout = uix.VBox( ...
                 'Parent', mainLayout, ...
                 'Padding', 11);
@@ -149,39 +152,30 @@ classdef DataCuratorView < appbox.View
                 'Min', 1, ...
                 'Enable', 'off', ...
                 'Callback', @(h,d)notify(obj, 'SelectedPreProcessor'));
+            
             signalDetailLayout = uix.VBox( ...
                 'Parent', signalLayout, ...
                 'Spacing', 5);
-            
-            obj.epochCard.panel = uipanel( ...
+            obj.plotCard.panel = uipanel( ...
                 'Parent', signalDetailLayout, ...
                 'BorderType', 'line', ...
                 'HighlightColor', [130/255 135/255 144/255], ...
                 'BackgroundColor', 'w');
-           
-            obj.epochCard.axes = axes( ...
-                'Parent', obj.epochCard.panel);
-            yyaxis(obj.epochCard.axes, 'right');
-            set(obj.epochCard.axes, 'YColor', 'black');
-            yyaxis(obj.epochCard.axes, 'left');
-            set(obj.epochCard.axes, 'YColor', 'black');
-            
-            obj.epochCard.grid = uiextras.jide.PropertyGrid(signalPreProcessingLayout, ...
+            obj.plotCard.axes = axes( ...
+                'Parent', obj.plotCard.panel);
+            yyaxis(obj.plotCard.axes, 'right');
+            set(obj.plotCard.axes, 'YColor', 'black');
+            yyaxis(obj.plotCard.axes, 'left');
+            set(obj.plotCard.axes, 'YColor', 'black');
+
+            obj.preProcessorPropertyGrid = uiextras.jide.PropertyGrid(signalPreProcessingLayout, ...
                 'Enable', false, ...
-                'Callback', @(h,d)notify(obj, 'SetEpochSignalConfigurationSetting', symphonyui.ui.UiEventData(d)));
-            signalConfigurationMenu = uicontextmenu('Parent', obj.figureHandle);
-            uimenu( ...
-                'Parent', signalConfigurationMenu, ...
-                'Label', 'Unlock', ...
-                'Callback', @(h,d)notify(obj, 'UnlockEpochSignalConfigurationSettings'));
-            set(obj.epochCard.grid, 'UIContextMenu', signalConfigurationMenu);
-            
+                'Callback', @(h,d)notify(obj, 'SetPreProcessorParameters'));
             obj.executePreProcessorButton = uicontrol( ...
                 'Parent', signalPreProcessingLayout, ...
                 'Style', 'pushbutton', ...
                 'String', 'Execute', ...
                 'Callback', @(h,d)notify(obj, 'ExecutePreProcessor'));
-            
             set(signalMasterLayout, 'Heights', [-1 -2]);            
             set(signalPreProcessingLayout, 'Heights', [30 -1  -1 30]);
             set(signalLayout, 'Widths', [-1 -7]);
@@ -317,29 +311,58 @@ classdef DataCuratorView < appbox.View
             set(layout, 'Heights', [50 -3 -1]);
         end
         
-        function n = addEpochNode(obj, parent, name, entity)
+        function path = getH5FileLocation(obj)
+            path = get(obj.h5FileName, 'String');
+        end
+
+        function setExperimentNode(obj, name, entity)
+            value = get(obj.entityTree.Root, 'Value');
             value.entity = entity;
-            value.type = symphonyui.ui.views.EntityNodeType.EPOCH;
+            set(obj.entityTree.Root, ...
+                'Name', name, ...
+                'Value', value);
+        end
+
+        function n = addCellDataNode(obj, parent, name, entity)
+            value.entity = entity;
+            value.type = sa_labs.analysis.ui.views.EntityNodeType.CELLS;
             n = uiextras.jTree.TreeNode( ...
                 'Parent', parent, ...
                 'Name', name, ...
                 'Value', value);
-            n.setIcon(symphonyui.app.App.getResource('icons', 'epoch.png'));
-            menu = uicontextmenu('Parent', obj.figureHandle);
-            menu = obj.addEntityContextMenus(menu);
-            set(n, 'UIContextMenu', menu);
         end
-        
+
+        function node = getCellFolderNode(obj)
+            node = obj.cellFolderNode;
+        end
+
+        function n = addEpochDataNode(obj, parent, name, entity)
+            value.entity = entity;
+            value.type = sa_labs.analysis.ui.views.EntityNodeType.EPOCH;
+            n = uiextras.jTree.TreeNode( ...
+                'Parent', parent, ...
+                'Name', name, ...
+                'Value', value);
+            % n.setIcon(symphonyui.app.App.getResource('icons', 'epoch.png'));
+            % menu = uicontextmenu('Parent', obj.figureHandle);
+            % menu = obj.addEntityContextMenus(menu);
+            % set(n, 'UIContextMenu', menu);
+        end
+
+        function loadCellDataFilters(obj, filterNames)
+            set(obj.availablefilterMenu, 'String', filterNames); 
+        end
+
         function clearEpochDataAxes(obj)
-            yyaxis(obj.epochCard.axes, 'left');
-            cla(obj.epochCard.axes);
-            yyaxis(obj.epochCard.axes, 'right');
-            cla(obj.epochCard.axes);
-            legend(obj.epochCard.axes, 'off');
+            yyaxis(obj.plotCard.axes, 'left');
+            cla(obj.plotCard.axes);
+            yyaxis(obj.plotCard.axes, 'right');
+            cla(obj.plotCard.axes);
+            legend(obj.plotCard.axes, 'off');
         end
         
         function setEpochDataXLabel(obj, label)
-            xlabel(obj.epochCard.axes, label, ...
+            xlabel(obj.plotCard.axes, label, ...
                 'Interpreter', 'tex');
         end
         
@@ -347,8 +370,8 @@ classdef DataCuratorView < appbox.View
             if nargin < 3
                 lr = 'left';
             end
-            yyaxis(obj.epochCard.axes, lr);
-            ylabel(obj.epochCard.axes, label, ...
+            yyaxis(obj.plotCard.axes, lr);
+            ylabel(obj.plotCard.axes, label, ...
                 'Interpreter', 'tex');
         end
         
@@ -356,7 +379,7 @@ classdef DataCuratorView < appbox.View
             if nargin < 3
                 lr = 'left';
             end
-            yaxis = get(obj.epochCard.axes, 'YAxis');
+            yaxis = get(obj.plotCard.axes, 'YAxis');
             if strcmp(lr, 'left')
                 i = 1;
             elseif strcmp(lr, 'right')
@@ -371,37 +394,37 @@ classdef DataCuratorView < appbox.View
             if nargin < 5
                 lr = 'left';
             end
-            yyaxis(obj.epochCard.axes, lr);
-            line(x, y, 'Parent', obj.epochCard.axes, 'Color', color);
+            yyaxis(obj.plotCard.axes, lr);
+            line(x, y, 'Parent', obj.plotCard.axes, 'Color', color);
         end
         
         function addEpochDataLegend(obj, str)
-            legend(obj.epochCard.axes, str);
+            legend(obj.plotCard.axes, str);
         end
         
         function enableSelectEpochSignal(obj, tf)
-            set(obj.epochCard.signalListBox, 'Enable', appbox.onOff(tf));
+            set(obj.plotCard.signalListBox, 'Enable', appbox.onOff(tf));
         end
         
         function s = getSelectedEpochSignals(obj)
-            s = get(obj.epochCard.signalListBox, 'Value');
+            s = get(obj.plotCard.signalListBox, 'Value');
         end
         
         function setEpochSignalList(obj, names, values)
-            set(obj.epochCard.signalListBox, 'String', names);
-            set(obj.epochCard.signalListBox, 'Values', values);
+            set(obj.plotCard.signalListBox, 'String', names);
+            set(obj.plotCard.signalListBox, 'Values', values);
         end
         
         function enableEpochSignalConfiguration(obj, tf)
-            set(obj.epochCard.grid, 'Enable', tf);
+            set(obj.plotCard.grid, 'Enable', tf);
         end
         
         function setEpochSignalConfiguration(obj, fields)
-            set(obj.epochCard.grid, 'Properties', fields);
+            set(obj.plotCard.grid, 'Properties', fields);
         end
         
         function updateEpochSignalConfiguration(obj, fields)
-            obj.epochCard.grid.UpdateProperties(fields);
+            obj.plotCard.grid.UpdateProperties(fields);
         end
         
         function n = getNodeName(obj, node) %#ok<INUSL>

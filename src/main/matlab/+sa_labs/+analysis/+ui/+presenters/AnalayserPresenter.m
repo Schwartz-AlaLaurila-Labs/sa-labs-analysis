@@ -1,4 +1,4 @@
-classdef AnalaysisManagerPresenter < appbox.Presenter
+classdef AnalayserPresenter < appbox.Presenter
     
     properties
         viewSelectedCloseFcn

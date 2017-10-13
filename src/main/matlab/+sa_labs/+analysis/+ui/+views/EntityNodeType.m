@@ -9,8 +9,7 @@ classdef EntityNodeType
     methods
         
         function c = char(obj)
-            import sa_labs.ui.EntityNodeType;
-            import sa_labs.ui.EntityNodeType;
+            import sa_labs.analysis.ui.views.EntityNodeType;
              
             switch obj
                 case EntityNodeType.EXPERIMENT
@@ -25,15 +24,15 @@ classdef EntityNodeType
         end
         
         function tf = isExperiment(obj)
-            tf = obj == symphonyui.ui.views.EntityNodeType.EXPERIMENT;
+            tf = obj == sa_labs.analysis.ui.views.EntityNodeType.EXPERIMENT;
         end
         
         function tf = isCell(obj)
-            tf = obj == symphonyui.ui.views.EntityNodeType.CELLS;
+            tf = obj == sa_labs.analysis.ui.views.EntityNodeType.CELLS;
         end
         
         function tf = isEpoch(obj)
-            tf = obj == symphonyui.ui.views.EntityNodeType.EPOCH;
+            tf = obj == sa_labs.analysis.ui.views.EntityNodeType.EPOCH;
         end
     end
     

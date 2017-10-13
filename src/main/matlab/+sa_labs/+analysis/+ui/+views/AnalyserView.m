@@ -1,4 +1,4 @@
-classdef AnalysisManagerView < appbox.View
+classdef AnalyserView < appbox.View
     
     events
         SelectedNodes
