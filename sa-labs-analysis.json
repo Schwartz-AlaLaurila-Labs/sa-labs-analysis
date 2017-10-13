@@ -24,7 +24,7 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "../",
+		"toolboxRoot": "lib",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-core"
@@ -39,7 +39,7 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "../",
+		"toolboxRoot": "lib",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-util"
@@ -74,5 +74,4 @@
 		"update": "",
 	    "url": ""
 	}
-
 ]

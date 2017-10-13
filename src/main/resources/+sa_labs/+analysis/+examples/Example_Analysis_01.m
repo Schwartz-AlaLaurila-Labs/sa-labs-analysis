@@ -21,7 +21,7 @@ preProcessors = {@(d) sa_labs.pre_processors.addSpikesToEpoch(d, 'device', {'Amp
 
 cellDataArray = project.getCellDataArray();
 % detecting spikes for the first cell data
-offlineAnalysisManager.preProcess(cellDataArray(1), preProcessors,  'enabled', [true]);
+offlineAnalysisManager.preProcess(cellDataArray(1), preProcessors,  'enabled', [false]);
 %
 %
 open(project.file)
@@ -29,7 +29,7 @@ open(project.file)
 
 analysisPreset = struct();
 analysisPreset.type = 'listByProtocol';
-analysisPreset.buildTreeBy = {'displayName'};
+analysisPreset.buildTreeBy = {'displayName', 'stimTime', 'devices'};
 
 % Build the tree based on the tree definition
 
@@ -37,13 +37,16 @@ buildAnalysis('Example-Analysis', analysisPreset)
 
 %% Create Finder for searching through tree
 
-finder = getFeatureFinder('Example-Analysis', 'cellData', '2017-10-02c1');
+finder = getFeatureFinder('Example-Analysis', 'cellData', '2017-10-02c2');
 finder.getStructure().tostring()
 
+%%
 % a) To list all the epoch group for protocol Auto Center
 
 epochGroup = finder.find('displayName==Auto Center').toArray();
+epochs = epochGroup.getFeatureData('EPOCH');
 
+%%
 % b) To get all the epochs corresponds to the above featureGroup
 
 epochs = epochGroup.getFeatureData('AMP1_EPOCH');
