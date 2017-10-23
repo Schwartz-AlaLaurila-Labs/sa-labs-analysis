@@ -78,7 +78,6 @@ classdef DataCuratorPresenter < appbox.Presenter
 	methods (Access = private)
         
         function populateCellDataFilters(obj)
-            
             filters = obj.offlineAnalysisManager.getCellDataFilters();
             obj.view.loadCellDataFilters({filters.name});      
         end
@@ -185,6 +184,17 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
 
         function populateDetailsForEntityMap(obj, entitiyMap)
+            values = entitiyMap.values;
+            entities = [values{:}];
+            isValidEntity = ~ isempty(entities) && numel(entities) == 1;
+            
+            if isValidEntity
+                fields = uiextras.jide.PropertyGridField.GenerateFromMap(entities(1).attributes);
+            else
+                fields = uiextras.jide.PropertyGridField.empty(0, 1);
+            end
+            obj.view.setParameterPropertyGrid(fields);
+            obj.view.enableAddAndDeleteParameter(isValidEntity);
         end
 
         function updateStateOfControls(obj)
