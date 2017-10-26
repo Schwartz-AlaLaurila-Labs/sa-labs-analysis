@@ -66,6 +66,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'ReParse', @obj.onViewReParse);
           	obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
+            obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
+            obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
+            obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
         end
 
         function onViewSelectedClose(obj, ~, ~)
@@ -126,7 +129,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             for cellData = each(cellDataArray)
                 obj.addCellDataNode(cellData);
             end
-            obj.populateFilterProperties(cellDataArray);
+            obj.populateFilterDetails(cellDataArray);
             
 			obj.view.expandNode(obj.view.getCellFolderNode());
             enabled = numel(cellData) > 0;
@@ -135,12 +138,67 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.enableAvailablePreProcessorFunctions(enabled);
         end
         
-        function populateFilterProperties(obj, cellDataArray)
+        function populateFilterDetails(obj, cellDataArray)
             if isempty(cellDataArray)
                 return
             end
-            properties = linq(cellDataArray).select(@(cellData) cellData.getEpochKeysetUnion()).distinct().toList();
+            cellNames = {cellDataArray.recordingLabel};
+            obj.view.setAvailableCellNames(cellNames);
+            obj.populateFilterProperties();
+        end
+        
+        function populateFilterProperties(obj)
+            cellData = obj.getFilteredCellData();
+            properties = cellData.getEpochKeysetUnion();
             obj.view.setFilterProperty(properties);
+            obj.view.enableFilters(numel(cellData) == 1);
+        end
+        
+        function cellData = getFilteredCellData(obj)
+            cellName = obj.view.getSelectedCellName();
+            cellDataArray = obj.view.getExperimentData();
+            cellData = linq(cellDataArray).where(@(data) strcmp(data.recordingLabel, cellName)).first();
+        end
+        
+        function onViewSelectedFilterProperty(obj, ~, uiEventData)
+            indices = uiEventData.data.Indices;
+            row = indices(1);
+            property = obj.view.getSelectedFilterProperty(row);
+            obj.populateFilterValueSuggestion(property);
+        end
+        
+        function onViewSelectedFilterRow(obj, ~, uiEventData)
+            row = uiEventData.data.Indices;
+            property = obj.view.getSelectedFilterProperty(row);
+            obj.populateFilterValueSuggestion(property);
+        end
+        
+        function populateFilterValueSuggestion(obj, property)
+            if isempty(property)
+                return
+            end
+            values = obj.getFilteredCellData().getEpochValues(property);
+            suggestedValues = linq(values).select(@(x) num2str(x)).toList();
+            type = 'numeric';
+            if iscellstr(values)
+                type = 'string';
+            end
+            obj.view.setFilterValueSuggestion(type, suggestedValues);
+        end
+        
+        function onViewExecuteFilter(obj, ~, ~)
+            query = linq(obj.getFilteredCellData().epochs);
+            filterRows = obj.view.getFilterRows();
+            
+            for row = each(filterRows)
+                query = query.where(row.predicate);
+            end
+            
+            filteredEpochs = query.toArray();
+            for epoch = each(filteredEpochs)
+                epoch.filtered = true;
+            end
+            obj.view.enableAddAndDeleteParameters(numel(filteredEpochs) > 0);
         end
 
 		function addCellDataNode(obj, cellData)

@@ -14,6 +14,9 @@ classdef DataCuratorView < appbox.View
         ApplyPreProcessorToAll
         ApplyPreProcessorToThisAndFuture
         UpdatePlots
+        DoRefreshFilterTable
+        SelectedFilterProperty
+        SelectedFilterRow
         AddNewParameter
         RemoveParameter
         ExecuteFilter
@@ -54,7 +57,8 @@ classdef DataCuratorView < appbox.View
     end
     
     properties (Constant)
-        FILTER_CONDITION = {'==', '>', '<', '>=', '<=', '~='};
+        FILTER_CONDITION_MAP = containers.Map({'numeric', 'string'},...
+            {{'', '==', '>', '<', '>=', '<=', '~='}, {'', 'strcmpi', 'strfind', 'strcmp', 'regexp'}});
     end
     
     methods
@@ -279,6 +283,8 @@ classdef DataCuratorView < appbox.View
                'ColumnEditable', [true true true],...
                'ColumnName', {'Property','Condition', 'Value'},...
                'ColumnFormat', {'popup', 'popup', 'popupcheckbox'},...
+               'CellSelectionCallback', @(h, d)notify(obj, 'SelectedFilterRow', sa_labs.analysis.ui.util.UiEventData(d)),...
+               'CellEditCallback', @(h, d)notify(obj, 'SelectedFilterProperty', sa_labs.analysis.ui.util.UiEventData(d)),...
                'ColumnPreferredWidth', [40 20 100]);
            obj.filterTable.Data = cell(10, 3);
            
@@ -359,6 +365,11 @@ classdef DataCuratorView < appbox.View
                 'Name', name, ...
                 'Value', value);
         end
+        
+        function entity = getExperimentData(obj)
+            value = get(obj.entityTree.Root, 'Value');
+            entity = value.entity;
+        end
 
         function n = addCellDataNode(obj, parent, name, entity)
             value.entity = entity;
@@ -385,6 +396,14 @@ classdef DataCuratorView < appbox.View
             % menu = obj.addEntityContextMenus(menu);
             % set(n, 'UIContextMenu', menu);
         end
+        
+        function setAvailableCellNames(obj, cellNames)
+           set(obj.availableCellsMenu, 'String', cellNames); 
+        end
+        
+        function cellName = getSelectedCellName(obj)
+            cellName = get(obj.availableCellsMenu, 'String');
+        end
 
         function loadCellDataFilters(obj, filterNames)
             set(obj.availablefilterMenu, 'String', filterNames); 
@@ -392,7 +411,34 @@ classdef DataCuratorView < appbox.View
         
         function setFilterProperty(obj, properties)
             obj.filterTable.ColumnFormatData{1} = properties;
-            obj.filterTable.ColumnFormatData{2} = obj.FILTER_CONDITION;
+            obj.filterTable.ColumnFormatData{2} = {''};
+        end
+        
+        function setFilterValueSuggestion(obj, type, value)
+            obj.filterTable.ColumnFormatData{2} = obj.FILTER_CONDITION_MAP(type);
+            obj.filterTable.ColumnFormatData{3} = value;
+        end
+        
+        function enableFilters(obj, tf)
+            set(obj.availableCellsMenu, 'Enable', appbox.onOff(tf));
+            set(obj.availablefilterMenu, 'Enable', appbox.onOff(tf));
+        end
+        
+        function property = getSelectedFilterProperty(obj, row)
+            property = obj.filterTable.Data{row, 1};
+        end
+        
+        function filterRows = getFilterRows(obj)
+            data = obj.filterTable.Data;
+            rows = size(data, 1);
+            filterRows = [];
+            
+            for i = 1 : rows
+                rowData = data(i, :);
+                if ~ any(cellfun(@isempty, rowData))
+                    filterRows(i).predicate = obj.getFilterPredicate(rowData);  %#ok
+                end
+            end
         end
         
         function enableAvailablePlots(obj, tf)
@@ -534,6 +580,33 @@ classdef DataCuratorView < appbox.View
         function enableAddAndDeleteParameter(obj, tf)
             set(obj.addParameterButton, 'Enable', appbox.onOff(tf));
             set(obj.removeParameterButton, 'Enable', appbox.onOff(tf));
+        end
+        
+        function enableAddAndDeleteParameters(obj, tf)
+            set(obj.addParametersButton, 'Enable', appbox.onOff(tf));
+            set(obj.removeParametersButton, 'Enable', appbox.onOff(tf));
+        end
+    end
+    
+    methods (Access = protected)
+                
+        function predicate = getFilterPredicate(obj, rowData)
+            property = rowData{1};
+            condition = rowData{2};
+            values =  rowData{3};
+            
+            index = cellfun(@(valueSet) ismember(condition, valueSet), obj.FILTER_CONDITION_MAP.values);
+            keys = obj.FILTER_CONDITION_MAP.keys;
+            type = keys{index};
+            
+            if strcmp(type, 'numeric')
+                predicateCondition = str2func(strcat('@(data, values) any(data.get(''', property, ''')', condition, 'values)'));
+                values = str2double(values);
+                
+            else
+                predicateCondition = str2func(strcat('@(data, values) any(', condition, '(data.get(''', property, '''), values))'));
+            end
+            predicate = @(data) predicateCondition(data, values);
         end
     end
 end
