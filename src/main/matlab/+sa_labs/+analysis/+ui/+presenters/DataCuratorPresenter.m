@@ -187,20 +187,36 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function onViewExecuteFilter(obj, ~, ~)
-            query = linq(obj.getFilteredCellData().epochs);
+            import sa_labs.analysis.entity.*;
+            
+            cellData = obj.getFilteredCellData();
+            query = linq(1 : numel(cellData.epochs))...
+                .select(@(index) struct(...
+                'index', index,...
+                'epoch', cellData.epochs(index)));
+            
             filterRows = obj.view.getFilterRows();
             
             for row = each(filterRows)
-                query = query.where(row.predicate);
+                query = query.where(@(struct) row.predicate(struct.epoch));
             end
             
-            filteredEpochs = query.toArray();
-            for epoch = each(filteredEpochs)
-                epoch.filtered = true;
+            filteredStruct = query.toArray();
+            for structure = each(filteredStruct)
+                structure.epoch.filtered = true;
             end
-            obj.view.enableAddAndDeleteParameters(numel(filteredEpochs) > 0);
+            enabled = numel(filteredStruct) > 0;
+            obj.view.enableAddAndDeleteParameters(enabled);
+            
+            if enabled
+                [p, v] = cellData.getUniqueParamValues([filteredStruct.index]);
+                result = KeyValueEntity(containers.Map(p, v));
+            else
+                result = 'No matching records found !';
+            end
+            obj.view.setConsoleText(result);
         end
-
+        
 		function addCellDataNode(obj, cellData)
 			parent = obj.view.getCellFolderNode();
 			n = obj.view.addCellDataNode(parent, cellData.recordingLabel, cellData);

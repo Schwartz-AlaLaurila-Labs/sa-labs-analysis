@@ -586,6 +586,10 @@ classdef DataCuratorView < appbox.View
             set(obj.addParametersButton, 'Enable', appbox.onOff(tf));
             set(obj.removeParametersButton, 'Enable', appbox.onOff(tf));
         end
+        
+        function setConsoleText(obj, text)
+            obj.infoText.String = evalc('disp(text)');
+        end
     end
     
     methods (Access = protected)
