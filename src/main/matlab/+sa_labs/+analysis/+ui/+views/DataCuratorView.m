@@ -345,17 +345,33 @@ classdef DataCuratorView < appbox.View
             set(obj.availablePlots, 'Values', values);
         end
         
+        function plots = getSelectedPlots(obj)
+             plots = get(obj.availablePlots, 'Values');
+        end
+        
         function setAvailablePreProcessorFunctions(obj, names, values)
             set(obj.availablePreProcessorFunctions, 'String', names);
             set(obj.availablePreProcessorFunctions, 'Values', values);
         end
         
+        function functionNames = getSelectedPreProcessorFunction(obj)
+            functionNames = get(obj.availablePreProcessorFunctions, 'Value');
+        end
+                
         function setPreProcessorParameters(obj, properties)
              set(obj.preProcessorPropertyGrid, 'Properties', properties);
         end
         
-        function functionNames = getSelectedPreProcessorFunction(obj)
-            functionNames = get(obj.availablePreProcessorFunctions, 'Value');
+        function parameters = getPreprocessorFunctionParameters(obj, preProcessor)
+            properties = get(obj.preProcessorPropertyGrid, 'Properties');
+            functionNames = strsplit(preProcessor, '.');
+            category = appbox.humanize(functionNames{end});
+            filteredProperties = linq(properties).where(@(prop) strcmpi(prop.Category, category)).toArray();
+            
+            parameters = struct();
+            for prop = each(filteredProperties)
+                parameters.(prop.Name) = prop.Value;
+            end
         end
 
         function setExperimentNode(obj, name, entity)
@@ -589,6 +605,10 @@ classdef DataCuratorView < appbox.View
         
         function setConsoleText(obj, text)
             obj.infoText.String = evalc('disp(text)');
+        end
+        
+        function ax = getAxes(obj)
+            ax = obj.plotCard.axes;
         end
     end
     

@@ -80,16 +80,12 @@ classdef DataCuratorPresenter < appbox.Presenter
 
 	methods (Access = private)
         
-        function populateCellDataFilters(obj)
-            filters = obj.offlineAnalysisManager.getCellDataFilters();
-            obj.view.loadCellDataFilters({filters.name});      
-        end
         
         function populateAvailablePlots(obj)
             plots = {meta.package.fromName(obj.DATA_CURATOR_PLOTS).FunctionList.Name};
             functionNames = {};
             for plot = each(plots)
-                functionNames{end + 1} = [obj.PRE_PROCESSOR_FUNCTIONS '.'  plot]; %#ok
+                functionNames{end + 1} = [obj.DATA_CURATOR_PLOTS '.'  plot]; %#ok
             end
             obj.view.setAvailablePlots(plots, functionNames);
         end
@@ -101,41 +97,51 @@ classdef DataCuratorPresenter < appbox.Presenter
                 functionNames{end + 1} = [obj.PRE_PROCESSOR_FUNCTIONS '.' preProcessor]; %#ok
             end
             obj.view.setAvailablePreProcessorFunctions(preProcessors, functionNames);
-            
         end
-        
-        function populatePreProcessorParameters(obj)
-            functionNames = obj.view.getSelectedPreProcessorFunction();
-            fields = sa_labs.analysis.ui.util.helpdocToFields(functionNames);
-            if ~ isempty(fields)
-                obj.view.setPreProcessorParameters(fields);
-                obj.view.enablePreProcessorPropertyGrid('on');
-            end
+
+        function populateCellDataFilters(obj)
+            filters = obj.offlineAnalysisManager.getCellDataFilters();
+            obj.view.loadCellDataFilters({filters.name});
         end
         
 		function onViewLoadH5File(obj, ~, ~)
 			obj.populateCellDataEntity();
         end
         
-        function onViewSelectedPreProcessor(obj, ~, ~)
-            obj.populatePreProcessorParameters();
-        end
-
-		function populateCellDataEntity(obj)
-			pattern = obj.view.getH5FileLocation();
-			cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
-			obj.view.setExperimentNode(pattern, cellDataArray);
-
+        function populateCellDataEntity(obj)
+            pattern = obj.view.getH5FileLocation();
+            cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
+            obj.view.setExperimentNode(pattern, cellDataArray);
+            
             for cellData = each(cellDataArray)
                 obj.addCellDataNode(cellData);
             end
             obj.populateFilterDetails(cellDataArray);
             
-			obj.view.expandNode(obj.view.getCellFolderNode());
+            obj.view.expandNode(obj.view.getCellFolderNode());
             enabled = numel(cellData) > 0;
             
             obj.view.enableAvailablePlots(enabled);
             obj.view.enableAvailablePreProcessorFunctions(enabled);
+        end
+        
+        function addCellDataNode(obj, cellData)
+            parent = obj.view.getCellFolderNode();
+            n = obj.view.addCellDataNode(parent, cellData.recordingLabel, cellData);
+            obj.uuidToNode(cellData.uuid) = n;
+            
+            for epoch = each(cellData.epochs)
+                if ~ epoch.excluded || epoch.filtered
+                    obj.addEpochDataNode(epoch);
+                end
+            end
+        end
+        
+        function addEpochDataNode(obj, epoch)
+            parent = obj.uuidToNode(epoch.parentCell.uuid);
+            epochNumber = num2str(epoch.get('epochNumber'));
+            n = obj.view.addEpochDataNode(parent, epochNumber, epoch);
+            obj.uuidToNode(epoch.uuid) = n;
         end
         
         function populateFilterDetails(obj, cellDataArray)
@@ -152,6 +158,19 @@ classdef DataCuratorPresenter < appbox.Presenter
             properties = cellData.getEpochKeysetUnion();
             obj.view.setFilterProperty(properties);
             obj.view.enableFilters(numel(cellData) == 1);
+        end
+        
+        function onViewSelectedPreProcessor(obj, ~, ~)
+            obj.populatePreProcessorParameters();
+        end
+                
+        function populatePreProcessorParameters(obj)
+            functionNames = obj.view.getSelectedPreProcessorFunction();
+            fields = sa_labs.analysis.ui.util.helpdocToFields(functionNames);
+            if ~ isempty(fields)
+                obj.view.setPreProcessorParameters(fields);
+                obj.view.enablePreProcessorPropertyGrid('on');
+            end
         end
         
         function cellData = getFilteredCellData(obj)
@@ -217,30 +236,14 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.setConsoleText(result);
         end
         
-		function addCellDataNode(obj, cellData)
-			parent = obj.view.getCellFolderNode();
-			n = obj.view.addCellDataNode(parent, cellData.recordingLabel, cellData);
-            obj.uuidToNode(cellData.uuid) = n;
-            
-            for epoch = each(cellData.epochs)
-            	if ~ epoch.excluded || epoch.filtered
-            		obj.addEpochDataNode(epoch);
-            	end
-            end
-		end
-
-		function addEpochDataNode(obj, epoch)
-			parent = obj.uuidToNode(epoch.parentCell.uuid);
-            epochNumber = num2str(epoch.get('epochNumber'));
-			n = obj.view.addEpochDataNode(parent, epochNumber, epoch);
-            obj.uuidToNode(epoch.uuid) = n;			
-		end
         
         function onViewSelectedNodes(obj, ~, ~)
             % obj.view.stopEditingProperties();
             obj.view.update();
             entitiyMap = obj.getSelectedEntityMap();
             obj.populateDetailsForEntityMap(entitiyMap);
+            obj.preProcessEntityMap(entitiyMap);
+            obj.plotEntityMap(entitiyMap);
         end
 
         function entitiyMap = getSelectedEntityMap(obj)
@@ -269,6 +272,41 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             obj.view.setParameterPropertyGrid(fields);
             obj.view.enableAddAndDeleteParameter(isValidEntity);
+        end
+        
+        function preProcessEntityMap(obj, entitiyMap)
+            import sa_labs.analysis.ui.views.EntityNodeType;
+            key = char(EntityNodeType.EPOCH);
+            
+            if ~ isKey(entitiyMap, key)
+                return
+            end
+            entities = entitiyMap(key);
+            if isempty(entities)
+                return
+            end
+            preProcesors = obj.view.getSelectedPreProcessorFunction();
+            preProcesorHandles = cell(1, numel(preProcesors));
+            
+            for i = 1 : numel(preProcesors)
+                preProcessor = preProcesors{i};
+                parameters = obj.view.getPreprocessorFunctionParameters(preProcessor);
+                functionDelegate = str2func(strcat('@(data, parameters) ', preProcessor, '(data, parameters)'));
+                preProcesorHandles{i} = @(data) functionDelegate(data, parameters);
+            end
+            obj.offlineAnalysisManager.preProcessEpochData(entities, preProcesorHandles);
+        end
+        
+        function plotEntityMap(obj, entitiyMap)
+            values = entitiyMap.values;
+            entities = [values{:}];
+            plots = obj.view.getSelectedPlots();
+            
+            for i = 1 : numel(plots)
+                plot = plots{i};
+                functionDelegate = str2func(strcat('@(data, axes) ', plot, '(data, axes)'));
+                functionDelegate(entities, obj.view.getAxes());
+            end
         end
 
         function updateStateOfControls(obj)
