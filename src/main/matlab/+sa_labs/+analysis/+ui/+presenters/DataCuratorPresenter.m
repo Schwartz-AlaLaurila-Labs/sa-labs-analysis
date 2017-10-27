@@ -213,7 +213,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 return
             end
             values = obj.getFilteredCellData().getEpochValues(property);
-            suggestedValues = linq(values).select(@(x) num2str(x)).distinct().toList();
+            suggestedValues = linq(values).select(@(x) cellstr(num2str(x))).distinct().toList();
             type = 'numeric';
             if iscellstr(values)
                 type = 'string';
