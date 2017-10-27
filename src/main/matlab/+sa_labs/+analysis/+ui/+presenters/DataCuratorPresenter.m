@@ -320,6 +320,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             functionNames = obj.view.getSelectedPreProcessorFunction();
             defaultFields = sa_labs.analysis.ui.util.helpdocToFields(functionNames);
             fields = obj.view.getPreProcessorParameterPropertyGrid();
+            devices = obj.view.getSelectedDevices();
             
             for i = 1 : numel(defaultFields)
                 
@@ -328,13 +329,9 @@ classdef DataCuratorPresenter < appbox.Presenter
                 
                 if isFunctionHandle(defaultField.Value)
                     func = str2func(defaultField.Value);
-                    values = func(entity);
+                    values = func(entity, devices);
+                    trueIndex = true(size(values));
                     
-                    if ~ isempty(oldField) &&  all(islogical(oldField.Value))
-                        trueIndex = ismember(values, oldField.Type.Domain(oldField.Value));
-                    else
-                        trueIndex = true(size(values));
-                    end
                     newField = PropertyGridField(defaultField.Name, trueIndex,...
                         'Type', PropertyType('logical', 'row', values));
                     newField.Category = defaultField.Category;

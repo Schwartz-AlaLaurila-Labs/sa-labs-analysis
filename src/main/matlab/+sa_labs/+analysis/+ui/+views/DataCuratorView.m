@@ -357,7 +357,7 @@ classdef DataCuratorView < appbox.View
         end
         
         function devices = getSelectedDevices(obj)
-             devices = get(obj.availableDevices, 'Values');
+             devices = get(obj.availableDevices, 'Value');
         end
         
         function enableSelectDevices(obj, tf)
