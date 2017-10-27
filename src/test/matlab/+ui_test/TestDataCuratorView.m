@@ -8,12 +8,14 @@ cellData.attributes = containers.Map({'recordingLabel'}, {'c1'});
 
 epochs(1) = sa_labs.analysis.entity.EpochData();
 epochs(1).attributes = containers.Map({'epochNumber', 'rstar', 'protocol'}, {1, 0.02, 'LightStep'});
-epochs(1).responseHandle = @() epochData(1);
+epochs(1).dataLinks = containers.Map({'Amp1', 'Amp2', 'Amp3', 'Amp4'}, {'bla', 'bla', 'bla', 'bla'});
+epochs(1).responseHandle = @(path) epochData(1, :);
 epochs(1).parentCell = cellData;
 epochs(2) = sa_labs.analysis.entity.EpochData();
 epochs(2).attributes = containers.Map({'epochNumber', 'rstar', 'protocol'}, {2, 0.01, 'MovingBar'});
+epochs(2).dataLinks = containers.Map({'Amp1', 'Amp2'}, {'bla', 'bla'});
 epochs(2).parentCell = cellData;
-epochs(2).responseHandle = @() epochData(2);
+epochs(2).responseHandle = @(path) epochData(2, :);
 cellData.epochs = epochs;
 
 filter1 = struct();

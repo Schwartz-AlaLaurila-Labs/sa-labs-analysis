@@ -6,6 +6,7 @@ classdef DataCuratorView < appbox.View
         SelectedCell
         SelectedFilter
         SelectedNodes
+        SelectedDevices
         SelectedPlots
         SetPreProcessorParameters
         SelectedPreProcessor
@@ -39,6 +40,7 @@ classdef DataCuratorView < appbox.View
         removeParameterButton
         executePreProcessorButton
         excludeCurrentEpochCheckBox
+        availableDevices
         availablePlots
         plotCard
         applyToAllButton
@@ -142,6 +144,15 @@ classdef DataCuratorView < appbox.View
                 'Parent', signalLayout);
             Label( ...
                 'Parent', signalPreProcessingLayout, ...
+                'String', 'Available Devices:');
+            obj.availableDevices = MappedListBox( ...
+                'Parent', signalPreProcessingLayout, ...
+                'Max', 5, ...
+                'Min', 1, ...
+                'Enable', 'off', ...
+                'Callback', @(h,d)notify(obj, 'SelectedDevices'));
+            Label( ...
+                'Parent', signalPreProcessingLayout, ...
                 'String', 'Available Plots:');
             obj.availablePlots = MappedListBox( ...
                 'Parent', signalPreProcessingLayout, ...
@@ -167,7 +178,7 @@ classdef DataCuratorView < appbox.View
                 'Style', 'pushbutton', ...
                 'String', 'Execute', ...
                 'Callback', @(h,d)notify(obj, 'ExecutePreProcessor'));
-            set(signalPreProcessingLayout, 'Heights', [30 -1 30 -1 -1 30]);
+            set(signalPreProcessingLayout, 'Heights', [30 -1 30 -1 30 -1 -5 30]);
 
             signalDetailLayout = uix.VBox( ...
                 'Parent', signalLayout, ...
@@ -223,7 +234,7 @@ classdef DataCuratorView < appbox.View
             set(signalDetailControlLayout, 'Widths', [20 100 150 210 150 80 50 -2]);
             
             set(signalDetailLayout, 'Heights', [-1 30]);
-            set(signalLayout, 'Widths', [-1 -7]);
+            set(signalLayout, 'Widths', [-1.2 -7]);
             set(mainLayout, 'Widths', [-1 -5]);
             
             parameterLayout = uix.HBox( ...
@@ -340,6 +351,19 @@ classdef DataCuratorView < appbox.View
             path = get(obj.h5FileName, 'String');
         end
         
+        function setAvailableDevices(obj, names, values)
+            set(obj.availableDevices, 'String', names);
+            set(obj.availableDevices, 'Values', values);
+        end
+        
+        function devices = getSelectedDevices(obj)
+             devices = get(obj.availableDevices, 'Values');
+        end
+        
+        function enableSelectDevices(obj, tf)
+            set(obj.availableDevices, 'Enable', appbox.onOff(tf));
+        end
+        
         function setAvailablePlots(obj, names, values)
             set(obj.availablePlots, 'String', names);
             set(obj.availablePlots, 'Values', values);
@@ -372,6 +396,10 @@ classdef DataCuratorView < appbox.View
             for prop = each(filteredProperties)
                 parameters.(prop.Name) = prop.Value;
             end
+        end
+        
+        function propertyGrid = getPreProcessorParameterPropertyGrid(obj)
+            propertyGrid = get(obj.preProcessorPropertyGrid, 'Properties');
         end
 
         function setExperimentNode(obj, name, entity)

@@ -1,4 +1,5 @@
 function uiFields = helpdocToFields(functionNames)
+
 uiFields = [];
 
 for name = each(functionNames)
@@ -31,6 +32,8 @@ function s = flattenStructure(structure)
 structFields = setdiff(fields(structure), 'description');
 s = struct();
 for field = each(structFields)
-    s.(field) = structure.(field).default;
+    value = structure.(field).default;
+    s.(field) = value;
 end
 end
+
