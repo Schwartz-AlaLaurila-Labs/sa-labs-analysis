@@ -442,11 +442,13 @@ classdef DataCuratorView < appbox.View
         end
         
         function setAvailableCellNames(obj, cellNames)
-           set(obj.availableCellsMenu, 'String', cellNames); 
+           obj.availableCellsMenu.setString(cellNames); 
         end
         
         function cellName = getSelectedCellName(obj)
-            cellName = get(obj.availableCellsMenu, 'String');
+            cellNames = get(obj.availableCellsMenu, 'String');
+            index = obj.availableCellsMenu.getValue;
+            cellName = cellNames(index);
         end
 
         function loadCellDataFilters(obj, filterNames)

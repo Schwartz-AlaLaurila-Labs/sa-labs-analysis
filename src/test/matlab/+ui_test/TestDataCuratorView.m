@@ -28,12 +28,14 @@ filter3.name = 'filter three';
 offlineAnalysisManager = Mock();
 offlineAnalysisManager.when.getParsedCellData(AnyArgs()).thenReturn(cellData);
 offlineAnalysisManager.when.getCellDataFilters(AnyArgs()).thenReturn([filter1, filter2, filter3]);
-
+%%
+manager = getAnalysisManager();
 if exist('p', 'var')
     p.stop();
     
 end
-p = sa_labs.analysis.ui.presenters.DataCuratorPresenter(offlineAnalysisManager);
+p = sa_labs.analysis.ui.presenters.DataCuratorPresenter(manager);
 p.go();
 
 %%
+

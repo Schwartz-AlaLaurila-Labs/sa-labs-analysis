@@ -102,7 +102,9 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function populateCellDataFilters(obj)
             filters = obj.offlineAnalysisManager.getCellDataFilters();
-            obj.view.loadCellDataFilters({filters.name});
+            if ~ isempty(filters)
+                obj.view.loadCellDataFilters({filters.name});
+            end
         end
         
         function onViewLoadH5File(obj, ~, ~)
@@ -140,7 +142,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function addEpochDataNode(obj, epoch)
             parent = obj.uuidToNode(epoch.parentCell.uuid);
-            epochNumber = num2str(epoch.get('epochNumber'));
+            epochNumber = num2str(epoch.get('epochNum'));
             n = obj.view.addEpochDataNode(parent, epochNumber, epoch);
             obj.uuidToNode(epoch.uuid) = n;
         end
@@ -211,7 +213,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 return
             end
             values = obj.getFilteredCellData().getEpochValues(property);
-            suggestedValues = linq(values).select(@(x) num2str(x)).toList();
+            suggestedValues = linq(values).select(@(x) num2str(x)).distinct().toList();
             type = 'numeric';
             if iscellstr(values)
                 type = 'string';
@@ -252,13 +254,15 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         
         function onViewSelectedNodes(obj, ~, ~)
-            % obj.view.stopEditingProperties();
-            obj.view.update();
+            tic
             entitiyMap = obj.getSelectedEntityMap();
             obj.populateDevices(entitiyMap);
             obj.populateDetailsForEntityMap(entitiyMap);
             obj.preProcessEntityMap(entitiyMap);
             obj.plotEntityMap(entitiyMap);
+            obj.view.update();
+            elapsedTime = toc;
+            obj.log.info(['selected node processing time: ' num2str(elapsedTime)]);
         end
         
         function populateDevices(obj, entitiyMap)
