@@ -190,11 +190,8 @@ classdef DataCuratorView < appbox.View
                 'BackgroundColor', 'w');
             obj.plotCard.axes = axes( ...
                 'Parent', obj.plotCard.panel);
-            yyaxis(obj.plotCard.axes, 'right');
             set(obj.plotCard.axes, 'YColor', 'black');
-            yyaxis(obj.plotCard.axes, 'left');
-            set(obj.plotCard.axes, 'YColor', 'black');
-            
+
             signalDetailControlLayout = uix.HBox( ...
                 'Parent', signalDetailLayout, ...
                 'Spacing', 5);
