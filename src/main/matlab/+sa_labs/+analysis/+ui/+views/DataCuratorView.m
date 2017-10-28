@@ -42,6 +42,7 @@ classdef DataCuratorView < appbox.View
         excludeCurrentEpochCheckBox
         availableDevices
         availablePlots
+        tabPanel
         plotCard
         applyToAllButton
         applyToThisAndFuture
@@ -183,14 +184,14 @@ classdef DataCuratorView < appbox.View
             signalDetailLayout = uix.VBox( ...
                 'Parent', signalLayout, ...
                 'Spacing', 5);
-            obj.plotCard.panel = uipanel( ...
+            
+            obj.tabPanel = uix.TabPanel( ...
                 'Parent', signalDetailLayout, ...
-                'BorderType', 'line', ...
-                'HighlightColor', [130/255 135/255 144/255], ...
+                'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
+                'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
+                'Padding', 11,...
+                'TabWidth', 100,... 
                 'BackgroundColor', 'w');
-            obj.plotCard.axes = axes( ...
-                'Parent', obj.plotCard.panel);
-            set(obj.plotCard.axes, 'YColor', 'black');
 
             signalDetailControlLayout = uix.HBox( ...
                 'Parent', signalDetailLayout, ...
@@ -367,7 +368,53 @@ classdef DataCuratorView < appbox.View
         end
         
         function plots = getSelectedPlots(obj)
-             plots = get(obj.availablePlots, 'Values');
+             plots = get(obj.availablePlots, 'Value');
+        end
+        
+        function plots = getUnSelectedPlots(obj)
+            allPlots = get(obj.availablePlots, 'Values');
+            selectedPlots = obj.getSelectedPlots();
+            plots = setdiff(allPlots, selectedPlots);
+        end
+        
+        function addPlotToPanelTab(obj, plots)
+            for plot = each(plots)
+                plotField = obj.getValidPlotField(plot);
+                
+                if ~ isfield(obj.plotCard, plotField)
+                    newplotCard.panel = uipanel( ...
+                        'Parent', obj.tabPanel, ...
+                        'BorderType', 'line', ...
+                        'HighlightColor', [130/255 135/255 144/255], ...
+                        'BackgroundColor', 'w');
+                    newplotCard.axes = axes( ...
+                        'Parent', newplotCard.panel);
+                    set(newplotCard.axes, 'YColor', 'black');
+                    obj.plotCard.(plotField) = newplotCard;
+                end
+            end
+        end
+        
+        function removePlotFromPanelTab(obj, plots)
+            for plot = each(plots)
+                plotField = obj.getValidPlotField(plot);
+                
+                if isfield(obj.plotCard, plotField)
+                    oldplotCard = obj.plotCard.(plotField);
+                    delete(oldplotCard.panel);
+                    delete(oldplotCard.axes);
+                    obj.plotCard = rmfield(obj.plotCard, plotField);
+                end
+            end
+        end
+        
+        function setPlotPannelTitles(obj, names)
+            obj.tabPanel.TabTitles = names;
+        end
+        
+        function ax = getAxes(obj, plot)
+            plotField = obj.getValidPlotField(plot);
+            ax = obj.plotCard.(plotField).axes;
         end
         
         function setAvailablePreProcessorFunctions(obj, names, values)
@@ -495,80 +542,6 @@ classdef DataCuratorView < appbox.View
         function enablePreProcessorPropertyGrid(obj, tf)
             set(obj.preProcessorPropertyGrid, 'Enable', appbox.onOff(tf));
         end
-
-        function clearEpochDataAxes(obj)
-            yyaxis(obj.plotCard.axes, 'left');
-            cla(obj.plotCard.axes);
-            yyaxis(obj.plotCard.axes, 'right');
-            cla(obj.plotCard.axes);
-            legend(obj.plotCard.axes, 'off');
-        end
-        
-        function setEpochDataXLabel(obj, label)
-            xlabel(obj.plotCard.axes, label, ...
-                'Interpreter', 'tex');
-        end
-        
-        function setEpochDataYLabel(obj, label, lr)
-            if nargin < 3
-                lr = 'left';
-            end
-            yyaxis(obj.plotCard.axes, lr);
-            ylabel(obj.plotCard.axes, label, ...
-                'Interpreter', 'tex');
-        end
-        
-        function setEpochDataYAxisVisible(obj, tf, lr)
-            if nargin < 3
-                lr = 'left';
-            end
-            yaxis = get(obj.plotCard.axes, 'YAxis');
-            if strcmp(lr, 'left')
-                i = 1;
-            elseif strcmp(lr, 'right')
-                i = 2;
-            else
-                error('lr must be left or right');
-            end
-            set(yaxis(i), 'Visible', appbox.onOff(tf));
-        end
-        
-        function addEpochDataLine(obj, x, y, color, lr)
-            if nargin < 5
-                lr = 'left';
-            end
-            yyaxis(obj.plotCard.axes, lr);
-            line(x, y, 'Parent', obj.plotCard.axes, 'Color', color);
-        end
-        
-        function addEpochDataLegend(obj, str)
-            legend(obj.plotCard.axes, str);
-        end
-        
-        function enableSelectEpochSignal(obj, tf)
-            set(obj.plotCard.signalListBox, 'Enable', appbox.onOff(tf));
-        end
-        
-        function s = getSelectedEpochSignals(obj)
-            s = get(obj.plotCard.signalListBox, 'Value');
-        end
-        
-        function setEpochSignalList(obj, names, values)
-            set(obj.plotCard.signalListBox, 'String', names);
-            set(obj.plotCard.signalListBox, 'Values', values);
-        end
-        
-        function enableEpochSignalConfiguration(obj, tf)
-            set(obj.plotCard.grid, 'Enable', tf);
-        end
-        
-        function setEpochSignalConfiguration(obj, fields)
-            set(obj.plotCard.grid, 'Properties', fields);
-        end
-        
-        function updateEpochSignalConfiguration(obj, fields)
-            obj.plotCard.grid.UpdateProperties(fields);
-        end
         
         function n = getNodeName(obj, node) %#ok<INUSL>
             n = get(node, 'Name');
@@ -633,10 +606,6 @@ classdef DataCuratorView < appbox.View
         function setConsoleText(obj, text)
             obj.infoText.String = evalc('disp(text)');
         end
-        
-        function ax = getAxes(obj)
-            ax = obj.plotCard.axes;
-        end
     end
     
     methods (Access = protected)
@@ -658,6 +627,10 @@ classdef DataCuratorView < appbox.View
                 predicateCondition = str2func(strcat('@(data, values) any(', condition, '(data.get(''', property, '''), values))'));
             end
             predicate = @(data) predicateCondition(data, values);
+        end
+        
+        function plotField = getValidPlotField(obj, name)
+             plotField = matlab.lang.makeValidName(name);
         end
     end
 end

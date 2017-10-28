@@ -66,6 +66,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'ReParse', @obj.onViewReParse);
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
+            obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
@@ -170,6 +171,26 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.populateDetailsForEntityMap(entitiyMap);
         end
         
+        function onViewSelectedPlots(obj, ~, ~)
+            obj.updatePlotPanel();
+            entitiyMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entitiyMap);
+        end
+        
+        function updatePlotPanel(obj)
+            selectedPlots = obj.view.getSelectedPlots();
+            obj.view.addPlotToPanelTab(selectedPlots);
+            unSelectedplots = obj.view.getUnSelectedPlots();
+            obj.view.removePlotFromPanelTab(unSelectedplots);
+            
+            titles = {};
+            for plot = each(selectedPlots)
+                parsedName = strsplit(plot, '.');
+                titles{end +1} = parsedName{end}; %#ok
+            end
+            obj.view.setPlotPannelTitles(titles)
+        end
+        
         function onViewSelectedPreProcessor(obj, ~, ~)
             entities = obj.getSelectedEpoch();
             if ~ isempty(entities) && numel(entities) == 1
@@ -263,6 +284,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.populateDevices(entitiyMap);
             obj.populateDetailsForEntityMap(entitiyMap);
             obj.preProcessEntityMap(entitiyMap);
+            obj.updatePlotPanel();
             obj.plotEntityMap(entitiyMap);
             obj.view.update();
             elapsedTime = toc;
@@ -373,7 +395,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             for i = 1 : numel(plots)
                 plot = plots{i};
                 functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
-                functionDelegate(entities, devices, obj.view.getAxes());
+                functionDelegate(entities, devices, obj.view.getAxes(plot));
             end
         end
         
