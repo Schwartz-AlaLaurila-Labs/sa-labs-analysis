@@ -438,7 +438,11 @@ classdef DataCuratorView < appbox.View
             
             parameters = struct();
             for prop = each(filteredProperties)
-                parameters.(prop.Name) = prop.Value;
+                value = prop.Value;
+                if isa(prop.Type, 'uiextras.jide.PropertyType') && prop.Type.islogical()
+                    value = prop.Type.Domain(value);
+                end
+                parameters.(prop.Name) = value;
             end
         end
         
