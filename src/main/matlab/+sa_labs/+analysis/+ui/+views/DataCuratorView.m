@@ -24,9 +24,13 @@ classdef DataCuratorView < appbox.View
         AddParametersToFilteredGroup
         RemoveParametersToFilteredGroup
         ChangedParameterProperties
+        SendEntityToWorkspace
+        AddDeleteTag
+        DeleteEntity
     end
     
     properties (Access = private)
+        shortCutMenu
         h5FileName
         loadH5FileButton
         reparseButton
@@ -43,8 +47,8 @@ classdef DataCuratorView < appbox.View
         availablePlots
         tabPanel
         plotCard
-        applyToAllButton
-        applyToThisAndFuture
+        tagToDelete
+        deleteTagged
         updatePlotsCheckBox
         goToEpochField
         parameterPropertyGrid
@@ -72,6 +76,13 @@ classdef DataCuratorView < appbox.View
             set(obj.figureHandle, ...
                 'Name', 'Data Curator', ...
                 'Position', screenCenter(800, 520));
+            % ShortCut menu.
+            obj.shortCutMenu.root = uimenu(obj.figureHandle, ...
+                'Label', 'ShortCuts');
+            obj.shortCutMenu.tagDeleteEpochs = uimenu(obj.shortCutMenu.root, ...
+                'Label', 'Add Delete Tag', ...
+                'Accelerator', 'D', ...
+                'Callback', @(h,d)notify(obj, 'AddDeleteTag'));
             
             layout = uix.VBoxFlex(...
                 'Parent', obj.figureHandle,...
@@ -194,18 +205,18 @@ classdef DataCuratorView < appbox.View
                 'Parent', signalDetailLayout, ...
                 'Spacing', 5);
             uix.Empty('Parent', signalDetailControlLayout);
-            obj.applyToAllButton = uicontrol( ...
+            obj.tagToDelete = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
                 'Style', 'pushbutton', ...
-                'String', 'Apply All', ...
-                'Enable', 'off', ...
-                'Callback', @(h,d)notify(obj, 'ApplyPreProcessorToAll'));
-            obj.applyToThisAndFuture = uicontrol( ...
+                'String', 'Tag To Delete', ...
+                'Enable', 'on', ...
+                'Callback', @(h,d)notify(obj, 'AddDeleteTag'));
+            obj.deleteTagged = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
                 'Style', 'pushbutton', ...
-                'String', 'Apply To This & Future', ...
-                'Enable', 'off', ...
-                'Callback', @(h,d)notify(obj, 'ApplyPreProcessorToThisAndFuture'));
+                'String', 'Delete Tagged', ...
+                'Enable', 'on', ...
+                'Callback', @(h,d)notify(obj, 'DeleteEntity'));
             obj.updatePlotsCheckBox = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
                 'Style', 'checkbox', ...
@@ -463,6 +474,10 @@ classdef DataCuratorView < appbox.View
                 'Value', value);
         end
         
+        function name = getExperimentName(obj)
+            name = get(obj.entityTree.Root, 'Name');
+        end
+        
         function entity = getExperimentData(obj)
             value = get(obj.entityTree.Root, 'Value');
             entity = value.entity;
@@ -488,10 +503,9 @@ classdef DataCuratorView < appbox.View
                 'Parent', parent, ...
                 'Name', name, ...
                 'Value', value);
-            % n.setIcon(symphonyui.app.App.getResource('icons', 'epoch.png'));
-            % menu = uicontextmenu('Parent', obj.figureHandle);
-            % menu = obj.addEntityContextMenus(menu);
-            % set(n, 'UIContextMenu', menu);
+            menu = uicontextmenu('Parent', obj.figureHandle);
+            menu = obj.addEpochDataContextMenus(menu);
+            set(n, 'UIContextMenu', menu);
         end
         
         function setAvailableCellNames(obj, cellNames)
@@ -641,5 +655,10 @@ classdef DataCuratorView < appbox.View
         function plotField = getValidPlotField(obj, name)
              plotField = matlab.lang.makeValidName(name);
         end
+        
+        function menu = addEpochDataContextMenus(obj, menu)
+            % TODO change source label
+        end
+
     end
 end

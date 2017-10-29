@@ -33,12 +33,10 @@ classdef DataCuratorPresenter < appbox.Presenter
     methods (Access = protected)
         
         function willGo(obj)
-            obj.populateCellDataFilters();
             obj.populateAvailablePlots();
             obj.populateAvailablePreProcessors();
             obj.populatePreProcessorParameters();
-            obj.updatePlotPanel();
-            
+            obj.populateCellDataFilters();
             try
                 obj.loadSettings();
             catch x
@@ -69,6 +67,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
+            obj.addListener(v, 'AddDeleteTag', @obj.onViewAddDeleteTag);
+            obj.addListener(v, 'DeleteEntity', @obj.onViewSelectedDeleteEntity);
         end
     end
     
@@ -106,22 +106,25 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function onViewLoadH5File(obj, ~, ~)
-            obj.populateCellDataEntity();
-        end
-        
-        function populateCellDataEntity(obj)
+            
             pattern = obj.view.getH5FileLocation();
+            if strcmp(pattern, obj.view.getExperimentName())
+                return
+            end
+            obj.updatePlotPanel();
             cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
             obj.view.setExperimentNode(pattern, cellDataArray);
-            
+            obj.populateEntityTree(cellDataArray);
+            obj.populateFilterDetails(cellDataArray);
+        end
+        
+        function populateEntityTree(obj, cellDataArray)
+           
             for cellData = each(cellDataArray)
                 obj.addCellDataNode(cellData);
             end
-            obj.populateFilterDetails(cellDataArray);
-            
             obj.view.expandNode(obj.view.getCellFolderNode());
             enabled = numel(cellData) > 0;
-            
             obj.view.enableAvailablePlots(enabled);
             obj.view.enableAvailablePreProcessorFunctions(enabled);
         end
@@ -132,9 +135,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.uuidToNode(cellData.uuid) = n;
             
             for epoch = each(cellData.epochs)
-                if ~ epoch.excluded || epoch.filtered
-                    obj.addEpochDataNode(epoch);
-                end
+                obj.addEpochDataNode(epoch);
             end
         end
         
@@ -487,6 +488,43 @@ classdef DataCuratorPresenter < appbox.Presenter
                 entities = entitiyMap(key);
             end
         end
+        
+        function onViewAddDeleteTag(obj, ~, ~)
+            epochs = obj.getSelectedEpoch();
+            for epoch = each(epochs)
+                epoch.excluded = true;
+                node = obj.uuidToNode(epoch.uuid);
+                name = obj.view.getNodeName(node);
+                obj.view.setNodeName(node, strcat('To delete-', name));
+            end
+        end
+        
+        function onViewSelectedDeleteEntity(obj, ~, ~)
+            obj.deleteSelectedEntity();
+        end
+        
+        function deleteSelectedEntity(obj)
+            node = obj.view.getCellFolderNode();
+            obj.view.collapseNode(node);
+            cellDatas = obj.view.getExperimentData();
+            
+            result = obj.view.showMessage( ...
+                'Are you sure you want to delete Tagged Epochs ?', 'Delete Entity', ...
+                'button1', 'Cancel', ...
+                'button2', 'Delete', ...
+                'width', 300);
+            if ~strcmp(result, 'Delete')
+                return;
+            end
+            updatedCellDatas = obj.offlineAnalysisManager.deleteEpochFromCells(cellDatas);
+            
+            for updateCellData = each(updatedCellDatas)
+                node = obj.uuidToNode(updateCellData.uuid);
+                obj.view.removeNode(node);
+            end
+            obj.populateEntityTree(updatedCellDatas);
+        end
+
     end
     
 end
