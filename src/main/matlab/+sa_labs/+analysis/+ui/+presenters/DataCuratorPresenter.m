@@ -143,8 +143,16 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function addEpochDataNode(obj, epoch)
             parent = obj.uuidToNode(epoch.parentCell.uuid);
-            epochNumber = num2str(epoch.get('epochNum'));
-            n = obj.view.addEpochDataNode(parent, epochNumber, epoch);
+            epochIndex = num2str(epoch.get('epochNum'));
+            [h, m, s] = hms(epoch.get('epochTime'));
+            h5EpochNumber = epoch.get('h5EpochNumber');
+            
+            name = strcat('(', epochIndex, ')');
+            if ~ isempty(h5EpochNumber)
+                strcat(name, '-(h5epochNumber=', num2str(h5EpochNumber) ,')');
+            end
+            name = strcat(name, '-', num2str(h), ':', num2str(m), ':', num2str(s));
+            n = obj.view.addEpochDataNode(parent, name, epoch);
             obj.uuidToNode(epoch.uuid) = n;
         end
         
