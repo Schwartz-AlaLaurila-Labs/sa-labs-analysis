@@ -1,9 +1,5 @@
 classdef DataCuratorPresenter < appbox.Presenter
     
-    properties
-        viewSelectedCloseFcn
-    end
-    
     properties (Access = protected)
         offlineAnalysisManager
     end
@@ -50,7 +46,6 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function willStop(obj)
-            obj.viewSelectedCloseFcn = [];
             try
                 obj.saveSettings();
             catch x
@@ -71,12 +66,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
-        end
-        
-        function onViewSelectedClose(obj, ~, ~)
-            if ~isempty(obj.viewSelectedCloseFcn)
-                obj.viewSelectedCloseFcn();
-            end
         end
     end
     

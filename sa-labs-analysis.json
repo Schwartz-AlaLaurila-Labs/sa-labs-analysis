@@ -8,7 +8,7 @@
 		"name": "sa-labs-analysis",
 		"pathPlacement": "append",
 		"requirementHook": "",
-		"subfolder": "",
+		"subfolder": "src",
 		"toolboxRoot": "",
 		"type": "git",
 		"update": "",
@@ -16,7 +16,7 @@
 	},
 	{
 		"extra": "",
-		"flavor": "",
+		"flavor": "data-curator-ui",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
