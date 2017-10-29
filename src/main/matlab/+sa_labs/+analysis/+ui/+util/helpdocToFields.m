@@ -3,6 +3,11 @@ function uiFields = helpdocToFields(functionNames)
 uiFields = [];
 
 for name = each(functionNames)
+    
+    if isempty(name)
+        continue;
+    end
+    
     [doc, ~] = help(name);
     
     if ~ isempty(doc)

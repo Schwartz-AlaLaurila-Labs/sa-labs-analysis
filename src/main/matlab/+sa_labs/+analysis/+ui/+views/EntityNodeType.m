@@ -15,7 +15,7 @@ classdef EntityNodeType
                 case EntityNodeType.EXPERIMENT
                     c = 'Experiment';
                 case EntityNodeType.CELLS
-                    c = 'Cell Folder';
+                    c = 'Cell';
                 case EntityNodeType.EPOCH
                     c = 'Epoch';
                 otherwise

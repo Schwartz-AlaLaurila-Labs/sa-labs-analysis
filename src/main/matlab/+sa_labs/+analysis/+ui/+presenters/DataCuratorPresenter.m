@@ -82,12 +82,18 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function populateAvailablePreProcessors(obj)
-            preProcessors = {meta.package.fromName(obj.PRE_PROCESSOR_FUNCTIONS).FunctionList.Name};
-            functionNames = {};
-            for preProcessor = each(preProcessors)
-                functionNames{end + 1} = [obj.PRE_PROCESSOR_FUNCTIONS '.' preProcessor]; %#ok
+            packages = {meta.package.fromName(obj.PRE_PROCESSOR_FUNCTIONS).PackageList.Name};
+            functionNames = {''};
+            preProcessors= {'none'};
+            for package = each(packages)
+                names = {meta.package.fromName(package).FunctionList.Name};
+                for name = each(names)
+                    functionNames{end + 1} = [package '.' name]; %#ok
+                end
+                preProcessors = [preProcessors names{:}];
             end
             obj.view.setAvailablePreProcessorFunctions(preProcessors, functionNames);
+            
         end
         
         function populateCellDataFilters(obj)
@@ -278,18 +284,21 @@ classdef DataCuratorPresenter < appbox.Presenter
         function onViewSelectedNodes(obj, ~, ~)
             tic
             entitiyMap = obj.getSelectedEntityMap();
-            obj.populateDevices(entitiyMap);
+            obj.populateDevicesForCell(entitiyMap);
             obj.populateDetailsForEntityMap(entitiyMap);
             obj.preProcessEntityMap(entitiyMap);
-            obj.updatePlotPanel();
             obj.plotEntityMap(entitiyMap);
             obj.view.update();
             elapsedTime = toc;
             obj.log.info(['selected node processing time: ' num2str(elapsedTime)]);
         end
         
-        function populateDevices(obj, entitiyMap)
+        function populateDevicesForCell(obj, entitiyMap)
             cellDataArray = obj.getSelectedCell(entitiyMap);
+            
+            if isempty(cellDataArray)
+                return
+            end
             devices = linq(cellDataArray).selectMany(@(d) d.getEpochValues('devices')).distinct().toList();
             obj.view.setAvailableDevices(devices, devices);
             obj.view.enableSelectDevices(numel(devices) > 0);
@@ -324,26 +333,48 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function preProcessEntityMap(obj, entitiyMap)
-            entities = obj.getSelectedEpoch(entitiyMap);
-            if numel(entities) == 1
-                obj.updatePreProcessorParameters(entities);
+            import sa_labs.analysis.ui.views.EntityNodeType;
+
+            entities = obj.getSelectedCell(entitiyMap);
+            if ~ isempty(entities)
+                preProcesorHandles = obj.getPreProcessorHandle(char(EntityNodeType.CELLS));
+                obj.offlineAnalysisManager.preProcessCellData(entities, preProcesorHandles);
             end
-            
+
+            entities = obj.getSelectedEpoch(entitiyMap);
+            if ~ isempty(entities)
+                obj.updatePreProcessorParameters(entities);
+                preProcesorHandles = obj.getPreProcessorHandle(char(EntityNodeType.EPOCH));
+                obj.offlineAnalysisManager.preProcessEpochData(entities, preProcesorHandles);
+            end
+        end
+
+        function preProcesorHandles = getPreProcessorHandle(obj, type)
+
             preProcesors = obj.view.getSelectedPreProcessorFunction();
+            preProcesors = linq(preProcesors).where(@(p) any(strfind(lower(p), lower(type)))).toList();
             preProcesorHandles = cell(1, numel(preProcesors));
             
             for i = 1 : numel(preProcesors)
                 preProcessor = preProcesors{i};
                 parameters = obj.view.getPreprocessorFunctionParameters(preProcessor);
-                functionDelegate = str2func(strcat('@(data, parameters) ', preProcessor, '(data, parameters)'));
+                functionDelegate = getDelegate(preProcessor);
                 preProcesorHandles{i} = @(data) functionDelegate(data, parameters);
             end
-            obj.offlineAnalysisManager.preProcessEpochData(entities, preProcesorHandles);
+            
+            function f = getDelegate(preProcessor)
+                f = str2func(strcat('@(data, parameters) ', preProcessor, '(data, parameters)'));
+                obj.log.info(['Executing ' func2str(f)])
+            end
         end
         
         function updatePreProcessorParameters(obj, entity)
+           
+            if isempty(entity) || numel(entity) > 1
+               return
+            end
+
             import uiextras.jide.*;
-            
             functionNames = obj.view.getSelectedPreProcessorFunction();
             defaultFields = sa_labs.analysis.ui.util.helpdocToFields(functionNames);
             fields = obj.view.getPreProcessorParameterPropertyGrid();
@@ -369,7 +400,10 @@ classdef DataCuratorPresenter < appbox.Presenter
                     defaultFields(i).Value = oldField.Value;
                 end
             end
-            obj.view.setPreProcessorParameters(defaultFields);
+            
+            if ~ isempty(defaultFields)
+                obj.view.setPreProcessorParameters(defaultFields);
+            end
             
             function tf = isFunctionHandle(value)
                 tf = ischar(value) && ~ isempty((strfind(value, '@')) == 1);
@@ -378,14 +412,12 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function plotEntityMap(obj, entitiyMap)
             import sa_labs.analysis.ui.views.EntityNodeType;
-            experimentKey = char(EntityNodeType.EXPERIMENT);
+            key = char(EntityNodeType.EPOCH);
             
-            if isempty(entitiyMap) || isKey(entitiyMap, experimentKey) || isKey(entitiyMap, char(EntityNodeType.CELLS))
+            if isempty(entitiyMap) || ~ isKey(entitiyMap, key)
                 return
             end
-            
-            values = entitiyMap.values;
-            entities = [values{:}];
+            entities = entitiyMap(key);
             plots = obj.view.getSelectedPlots();
             devices = obj.view.getSelectedDevices();
             
@@ -438,11 +470,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             
             if isKey(entitiyMap, key)
                 entities = entitiyMap(key);
-            end
-            
-            if isempty(entities)
-                epochEntities = obj.getSelectedEpoch(entitiyMap);
-                entities = linq(epochEntities).select(@(e) e.parentCell).toArray();
             end
         end
     end

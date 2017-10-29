@@ -351,6 +351,9 @@ classdef DataCuratorView < appbox.View
         function setAvailableDevices(obj, names, values)
             set(obj.availableDevices, 'String', names);
             set(obj.availableDevices, 'Values', values);
+            if isempty(obj.getSelectedDevices) && ~ isempty(values)
+                set(obj.availableDevices, 'Value', values{1});
+            end
         end
         
         function devices = getSelectedDevices(obj)
@@ -427,15 +430,20 @@ classdef DataCuratorView < appbox.View
                 
         function setPreProcessorParameters(obj, properties)
              set(obj.preProcessorPropertyGrid, 'Properties', properties);
+             set(obj.preProcessorPropertyGrid, 'Enable', true);
         end
         
         function parameters = getPreprocessorFunctionParameters(obj, preProcessor)
             properties = get(obj.preProcessorPropertyGrid, 'Properties');
             functionNames = strsplit(preProcessor, '.');
             category = appbox.humanize(functionNames{end});
-            filteredProperties = linq(properties).where(@(prop) strcmpi(prop.Category, category)).toArray();
-            
             parameters = struct();
+            
+            if isempty(properties)
+                return
+            end
+            filteredProperties = linq(properties).where(@(prop) strcmpi(prop.Category, category)).toArray();
+          
             for prop = each(filteredProperties)
                 value = prop.Value;
                 if isa(prop.Type, 'uiextras.jide.PropertyType') && prop.Type.islogical()
