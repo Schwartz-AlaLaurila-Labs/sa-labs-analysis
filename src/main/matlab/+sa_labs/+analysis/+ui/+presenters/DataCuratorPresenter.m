@@ -37,6 +37,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.populateAvailablePlots();
             obj.populateAvailablePreProcessors();
             obj.populatePreProcessorParameters();
+            obj.updatePlotPanel();
+            
             try
                 obj.loadSettings();
             catch x
@@ -63,6 +65,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
+            obj.addListener(v, 'ExecutePreProcessor', @obj.onViewExecutePreProcessor);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
@@ -70,7 +73,6 @@ classdef DataCuratorPresenter < appbox.Presenter
     end
     
     methods (Access = private)
-        
         
         function populateAvailablePlots(obj)
             plots = {meta.package.fromName(obj.DATA_CURATOR_PLOTS).FunctionList.Name};
@@ -213,6 +215,11 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
         end
         
+        function onViewExecutePreProcessor(obj, ~, ~)
+            entitiyMap = obj.getSelectedEntityMap();
+            obj.processSelectedEntity(entitiyMap);
+        end
+        
         function cellData = getFilteredCellData(obj)
             cellName = obj.view.getSelectedCellName();
             cellDataArray = obj.view.getExperimentData();
@@ -280,17 +287,21 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.setConsoleText(result);
         end
         
-        
         function onViewSelectedNodes(obj, ~, ~)
             tic
             entitiyMap = obj.getSelectedEntityMap();
             obj.populateDevicesForCell(entitiyMap);
-            obj.populateDetailsForEntityMap(entitiyMap);
-            obj.preProcessEntityMap(entitiyMap);
-            obj.plotEntityMap(entitiyMap);
+            obj.processSelectedEntity(entitiyMap);
             obj.view.update();
             elapsedTime = toc;
             obj.log.info(['selected node processing time: ' num2str(elapsedTime)]);
+        end
+        
+        function processSelectedEntity(obj, entitiyMap)
+            obj.preProcessEntityMap(entitiyMap);
+            obj.plotEntityMap(entitiyMap);
+            obj.populateDetailsForEntityMap(entitiyMap);
+            obj.view.update();
         end
         
         function populateDevicesForCell(obj, entitiyMap)
@@ -424,7 +435,11 @@ classdef DataCuratorPresenter < appbox.Presenter
             for i = 1 : numel(plots)
                 plot = plots{i};
                 functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
-                functionDelegate(entities, devices, obj.view.getAxes(plot));
+                try
+                    functionDelegate(entities, devices, obj.view.getAxes(plot));
+                catch exception
+                    obj.view.showMessage(exception.message, 'Error');
+                end
             end
         end
         

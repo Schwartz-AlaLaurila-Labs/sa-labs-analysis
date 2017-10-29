@@ -3,18 +3,17 @@ classdef DataCuratorView < appbox.View
     events
         LoadH5File
         ReParse
-        SelectedCell
-        SelectedFilter
         SelectedNodes
         SelectedDevices
         SelectedPlots
-        SetPreProcessorParameters
         SelectedPreProcessor
         ExecutePreProcessor
         ExcludeCurrentEpoch
         ApplyPreProcessorToAll
         ApplyPreProcessorToThisAndFuture
         UpdatePlots
+        SelectedCell
+        SelectedFilter
         DoRefreshFilterTable
         SelectedFilterProperty
         SelectedFilterRow
@@ -172,8 +171,7 @@ classdef DataCuratorView < appbox.View
                 'Callback', @(h,d)notify(obj, 'SelectedPreProcessor'));
             obj.preProcessorPropertyGrid = uiextras.jide.PropertyGrid(signalPreProcessingLayout, ...
                 'Enable', false, ...
-                'ShowDescription', true, ...
-                'Callback', @(h,d)notify(obj, 'SetPreProcessorParameters'));
+                'ShowDescription', true);
             obj.executePreProcessorButton = uicontrol( ...
                 'Parent', signalPreProcessingLayout, ...
                 'Style', 'pushbutton', ...
