@@ -183,7 +183,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.enableReParse(enabled)
             obj.view.enableAvailablePreProcessorFunctions(enabled);
             obj.view.disablePlotPannel(~ enabled);
-            obj.view.enableShowFilteredEpochs(enabled);
         end
         
         function addCellDataNode(obj, cellData)
@@ -390,6 +389,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             enabled = numel(filteredIndices) > 0;
             obj.view.enableAddAndDeleteParameters(enabled);
+            obj.view.enableShowFilteredEpochs(enabled);
             
             if enabled
                 [p, v] = cellData.getUniqueParamValues(filteredIndices);
