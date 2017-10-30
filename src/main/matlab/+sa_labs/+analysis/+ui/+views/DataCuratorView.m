@@ -4,6 +4,7 @@ classdef DataCuratorView < appbox.View
         BrowseLocation
         LoadH5File
         ReParse
+        ShowFilteredEpochs
         SelectedNodes
         SelectedDevices
         SelectedPlots
@@ -35,6 +36,7 @@ classdef DataCuratorView < appbox.View
         loadH5FileButton
         reparseButton
         infoText
+        showFilteredEpochsCheckBox
         entityTree
         cellFolderNode
         availablePreProcessorFunctions
@@ -133,17 +135,23 @@ classdef DataCuratorView < appbox.View
                 'Parent', layout, ...
                 'padding', 5);
             
-            masterLayout = uix.HBox( ...
+            masterLayout = uix.VBox( ...
                 'Parent', mainLayout,...
                 'padding', 11);
-            
+            obj.showFilteredEpochsCheckBox = uicontrol( ...
+                'Parent', masterLayout, ...
+                'Style', 'checkbox', ...
+                'String', 'Show Filtered Epochs', ...
+                'Enable', 'off',...
+                'Callback', @(h,d)notify(obj, 'ShowFilteredEpochs'));
             obj.entityTree = uiextras.jTree.Tree( ...
                 'Parent', masterLayout, ...
                 'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
                 'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
                 'SelectionChangeFcn', @(h,d)notify(obj, 'SelectedNodes'), ...
                 'SelectionType', 'discontiguous');
-
+            set(masterLayout, 'Heights', [30 -1]);
+            
             root = obj.entityTree.Root;
             set(root, 'Value', struct('entity', [], 'type', EntityNodeType.EXPERIMENT));
             
@@ -376,6 +384,14 @@ classdef DataCuratorView < appbox.View
         
         function enableReParse(obj, tf)
             set(obj.reparseButton, 'Enable', appbox.onOff(tf));
+        end
+        
+        function enableShowFilteredEpochs(obj, tf)
+            set(obj.showFilteredEpochsCheckBox, 'Enable', appbox.onOff(tf));
+        end
+        
+        function tf = canShowFilteredEpochs(obj)
+            tf = get(obj.showFilteredEpochsCheckBox, 'Value');
         end
         
         function setAvailableDevices(obj, names, values)

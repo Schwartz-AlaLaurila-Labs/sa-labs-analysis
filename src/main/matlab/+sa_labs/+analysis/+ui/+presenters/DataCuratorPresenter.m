@@ -62,6 +62,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'BrowseLocation', @obj.onViewSelectedBrowseLocation);
             obj.addListener(v, 'LoadH5File', @obj.onViewLoadH5File);
             obj.addListener(v, 'ReParse', @obj.onViewReParse);
+            obj.addListener(v, 'ShowFilteredEpochs', @obj.onViewShowFilteredEpochs);
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
@@ -132,6 +133,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function onViewLoadH5File(obj, ~, ~)
+            pattern = obj.view.getH5FileName();
             if strcmp(pattern, obj.view.getExperimentName())
                 return
             end
@@ -181,6 +183,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.enableReParse(enabled)
             obj.view.enableAvailablePreProcessorFunctions(enabled);
             obj.view.disablePlotPannel(~ enabled);
+            obj.view.enableShowFilteredEpochs(enabled);
         end
         
         function addCellDataNode(obj, cellData)
@@ -206,6 +209,47 @@ classdef DataCuratorPresenter < appbox.Presenter
             name = strcat(name, '-', num2str(h), ':', num2str(m), ':', num2str(s));
             n = obj.view.addEpochDataNode(parent, name, epoch);
             obj.uuidToNode(epoch.uuid) = n;
+        end
+        
+        function onViewShowFilteredEpochs(obj, ~, ~)
+            if obj.view.canShowFilteredEpochs()
+                obj.showFilteredEpochs();
+            else
+                obj.showAllEpochs();
+            end
+        end
+        
+        function showFilteredEpochs(obj)
+            cellData = obj.getFilteredCellData();
+            for epoch = each(cellData.epochs)
+                unFiltered = isempty(epoch.filtered) || ~ epoch.filtered;
+                if unFiltered && isKey(obj.uuidToNode, epoch.uuid)
+                    node = obj.uuidToNode(epoch.uuid);
+                    obj.view.removeNode(node);
+                    remove(obj.uuidToNode, epoch.uuid);
+                end
+            end
+        end
+        
+        function showAllEpochs(obj)
+            cellData = obj.getFilteredCellData();
+            updateNode = false;
+            for epoch = each(cellData.epochs)
+                unFiltered = isempty(epoch.filtered) || ~ epoch.filtered;
+                if unFiltered && ~ isKey(obj.uuidToNode, epoch.uuid)
+                    updateNode = true;
+                    break;
+                end
+            end
+            
+            if ~ updateNode
+                return;
+            end
+            node = obj.uuidToNode(cellData.uuid);
+            obj.view.removeNode(node);
+            obj.addCellDataNode(cellData);
+            node = obj.uuidToNode(cellData.uuid);
+            obj.view.expandNode(node);
         end
         
         function populateFilterDetails(obj, cellDataArray)
@@ -324,26 +368,29 @@ classdef DataCuratorPresenter < appbox.Presenter
             import sa_labs.analysis.entity.*;
             
             cellData = obj.getFilteredCellData();
-            query = linq(1 : numel(cellData.epochs))...
-                .select(@(index) struct(...
-                'index', index,...
-                'epoch', cellData.epochs(index)));
-            
+            for epoch = each(cellData.epochs)
+                epoch.filtered = false;
+            end
+            obj.view.setConsoleText('processing !');
+
+            query = linq(1 : numel(cellData.epochs));
             filterRows = obj.view.getFilterRows();
             
             for row = each(filterRows)
-                query = query.where(@(struct) row.predicate(struct.epoch));
+                if ~ isempty(row.predicate)
+                    query = query.where(@(index) row.predicate(cellData.epochs(index)));
+                end
             end
-            
-            filteredStruct = query.toArray();
-            for structure = each(filteredStruct)
-                structure.epoch.filtered = true;
+            filteredIndices = query.toArray();
+           
+            for index = each(filteredIndices)
+                cellData.epochs(index).filtered = true;
             end
-            enabled = numel(filteredStruct) > 0;
+            enabled = numel(filteredIndices) > 0;
             obj.view.enableAddAndDeleteParameters(enabled);
             
             if enabled
-                [p, v] = cellData.getUniqueParamValues([filteredStruct.index]);
+                [p, v] = cellData.getUniqueParamValues(filteredIndices);
                 result = KeyValueEntity(containers.Map(p, v));
             else
                 result = 'No matching records found !';
