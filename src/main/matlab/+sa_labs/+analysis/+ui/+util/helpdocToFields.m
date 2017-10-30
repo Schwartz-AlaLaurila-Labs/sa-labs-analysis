@@ -8,7 +8,7 @@ for name = each(functionNames)
         continue;
     end
     
-    [doc, ~] = help(name);
+    [doc, ~] = help(which(name));
     
     if ~ isempty(doc)
         parsedDoc = strsplit(doc, '---');
