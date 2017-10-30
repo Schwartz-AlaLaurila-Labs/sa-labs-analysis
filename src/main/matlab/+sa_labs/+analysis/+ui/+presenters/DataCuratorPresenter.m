@@ -123,11 +123,11 @@ classdef DataCuratorPresenter < appbox.Presenter
                 return;
             end
             [~, name, ~] = fileparts(file);
-            obj.view.setH5FileName(name);
             
-            if strcmp(file, obj.view.getExperimentName())
+            if strcmp(name, obj.view.getExperimentName())
                 return
             end
+            obj.view.setH5FileName(name);
             obj.intializeCurator();
         end
         
