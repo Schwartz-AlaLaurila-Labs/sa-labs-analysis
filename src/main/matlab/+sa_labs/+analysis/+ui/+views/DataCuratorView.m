@@ -1,6 +1,7 @@
 classdef DataCuratorView < appbox.View
     
     events
+        BrowseLocation
         LoadH5File
         ReParse
         SelectedNodes
@@ -30,6 +31,7 @@ classdef DataCuratorView < appbox.View
     properties (Access = private)
         shortCutMenu
         h5FileName
+        browseLocationButton
         loadH5FileButton
         reparseButton
         infoText
@@ -105,6 +107,12 @@ classdef DataCuratorView < appbox.View
                 'Parent', cellInfoLayout, ...
                 'Style', 'edit', ...
                 'HorizontalAlignment', 'left');
+            obj.browseLocationButton = uicontrol( ...
+                'Parent', cellInfoLayout, ...
+                'Style', 'pushbutton', ...
+                'String', '...', ...
+                'Callback', @(h,d)notify(obj, 'BrowseLocation'));
+            uix.Empty('Parent', cellInfoLayout);
             obj.loadH5FileButton = uicontrol( ...
                 'Parent', cellInfoLayout, ...
                 'Style', 'pushbutton', ...
@@ -119,7 +127,7 @@ classdef DataCuratorView < appbox.View
                 'Callback', @(h,d)notify(obj, 'ReParse'));
 
             uix.Empty('Parent', cellInfoLayout);
-            set(cellInfoLayout, 'Widths', [100 -1 100 10 100 -5]);
+            set(cellInfoLayout, 'Widths', [100 -1 100 10 100 10 100 -5]);
                        
             mainLayout = uix.HBox( ...
                 'Parent', layout, ...
@@ -358,8 +366,16 @@ classdef DataCuratorView < appbox.View
             set(layout, 'Heights', [50 -3 -1]);
         end
         
-        function path = getH5FileLocation(obj)
-            path = get(obj.h5FileName, 'String');
+        function name = getH5FileName(obj)
+            name = get(obj.h5FileName, 'String');
+        end
+        
+        function setH5FileName(obj, name)
+            set(obj.h5FileName, 'String', name);
+        end
+        
+        function enableReParse(obj, tf)
+            set(obj.reparseButton, 'Enable', appbox.onOff(tf));
         end
         
         function setAvailableDevices(obj, names, values)
@@ -607,6 +623,12 @@ classdef DataCuratorView < appbox.View
         
         function removeNode(obj, node) %#ok<INUSL>
             node.delete();
+        end
+        
+        function removeChildNodes(obj, parent)
+            for node = each(parent.Children)
+                obj.removeNode(node);
+            end
         end
         
         function collapseNode(obj, node) %#ok<INUSL>

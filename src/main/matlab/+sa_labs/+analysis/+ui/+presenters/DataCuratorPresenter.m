@@ -2,6 +2,7 @@ classdef DataCuratorPresenter < appbox.Presenter
     
     properties (Access = protected)
         offlineAnalysisManager
+        fileRepository
     end
     
     properties (Access = private)
@@ -17,13 +18,14 @@ classdef DataCuratorPresenter < appbox.Presenter
     
     
     methods
-        function obj = DataCuratorPresenter(offlineAnalysisManager, view)
+        function obj = DataCuratorPresenter(offlineAnalysisManager, fileRepository, view)
             import sa_labs.analysis.*;
-            if nargin < 2
+            if nargin < 3
                 view = ui.views.DataCuratorView();
             end
             obj = obj@appbox.Presenter(view);
             obj.offlineAnalysisManager = offlineAnalysisManager;
+            obj.fileRepository = fileRepository;
             obj.settings = ui.settings.DataCuratorSettings();
             obj.log = logging.getLogger(app.Constants.ANALYSIS_LOGGER);
             obj.uuidToNode = containers.Map();
@@ -57,6 +59,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             bind@appbox.Presenter(obj);
             
             v = obj.view;
+            obj.addListener(v, 'BrowseLocation', @obj.onViewSelectedBrowseLocation);
             obj.addListener(v, 'LoadH5File', @obj.onViewLoadH5File);
             obj.addListener(v, 'ReParse', @obj.onViewReParse);
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
@@ -107,18 +110,63 @@ classdef DataCuratorPresenter < appbox.Presenter
                 obj.view.loadCellDataFilters({filters.name});
             end
         end
+
+        function onViewSelectedBrowseLocation(obj, ~, ~)
+            rawDataFolder = obj.fileRepository.rawDataFolder;
+            file = obj.view.showGetFile('Select H5File', '*.h5', rawDataFolder);
+            
+            if isempty(file)
+                return;
+            end
+            if ~ any(strfind(file, rawDataFolder))
+                obj.view.showError('Don''t change the rawdata folder!')
+            end
+            [~, name, ~] = fileparts(file);
+            obj.view.setH5FileName(name);
+            
+            if strcmp(file, obj.view.getExperimentName())
+                return
+            end
+            obj.intializeCurator();
+        end
         
         function onViewLoadH5File(obj, ~, ~)
-            
-            pattern = obj.view.getH5FileLocation();
             if strcmp(pattern, obj.view.getExperimentName())
                 return
             end
-            obj.updatePlotPanel();
+            obj.intializeCurator();
+        end
+        
+        function intializeCurator(obj)
+            pattern = obj.view.getH5FileName();
+            p = obj.view.showBusy('Loading h5 file..');
+            d = onCleanup(@()delete(p));
             cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
+            
+            obj.updatePlotPanel();
             obj.view.setExperimentNode(pattern, cellDataArray);
             obj.populateEntityTree(cellDataArray);
             obj.populateFilterDetails(cellDataArray);
+        end
+        
+        function onViewReParse(obj, ~, ~)
+            pattern = obj.view.getH5FileName();
+            result = obj.view.showMessage( ...
+                'Are you sure you want to override the existing cell data?', 'Reparse h5', ...
+                'button1', 'Cancel', ...
+                'button2', 'Yes', ...
+                'width', 300);
+            if ~strcmp(result, 'Yes')
+                return;
+            end
+            
+            node = obj.view.getCellFolderNode();
+            obj.view.removeChildNodes(node);
+            
+            p = obj.view.showBusy('Parsing h5 file..');
+            d = onCleanup(@()delete(p));
+            obj.offlineAnalysisManager.parseSymphonyFiles(pattern);
+            obj.intializeCurator();
         end
         
         function populateEntityTree(obj, cellDataArray)
@@ -129,6 +177,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.expandNode(obj.view.getCellFolderNode());
             enabled = numel(cellData) > 0;
             obj.view.enableAvailablePlots(enabled);
+            obj.view.enableReParse(enabled)
             obj.view.enableAvailablePreProcessorFunctions(enabled);
             obj.view.disablePlotPannel(~ enabled);
         end
