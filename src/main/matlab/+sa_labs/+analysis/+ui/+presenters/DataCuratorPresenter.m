@@ -120,6 +120,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             if ~ any(strfind(file, rawDataFolder))
                 obj.view.showError('Don''t change the rawdata folder!')
+                return;
             end
             [~, name, ~] = fileparts(file);
             obj.view.setH5FileName(name);
