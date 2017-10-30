@@ -245,6 +245,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             if ~ updateNode
                 return;
             end
+            p = obj.view.showBusy('Undo Filtering..');
+            d = onCleanup(@()delete(p));
             node = obj.uuidToNode(cellData.uuid);
             obj.view.removeNode(node);
             obj.addCellDataNode(cellData);
