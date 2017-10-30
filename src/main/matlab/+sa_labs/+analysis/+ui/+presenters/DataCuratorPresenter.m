@@ -134,7 +134,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function onViewLoadH5File(obj, ~, ~)
             pattern = obj.view.getH5FileName();
-            if strcmp(pattern, obj.view.getExperimentName())
+            if isempty(pattern) || strcmp(pattern, obj.view.getExperimentName())
                 return
             end
             obj.intializeCurator();

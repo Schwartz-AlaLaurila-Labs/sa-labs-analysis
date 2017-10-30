@@ -101,7 +101,7 @@ classdef DataCuratorView < appbox.View
             
             cellInfoLayout = uix.HBox( ...
                 'Parent', layout, ...
-                'Padding', 11);
+                'Padding', 5);
             Label( ...
                 'Parent', cellInfoLayout, ...
                 'String', 'H5 File Name:');
@@ -371,7 +371,7 @@ classdef DataCuratorView < appbox.View
             set(consoleLayout, 'Heights', [30 -1]);
             set(parameterLayout, 'Widths', [-2, -2, -3])
             
-            set(layout, 'Heights', [50 -3 -1]);
+            set(layout, 'Heights', [35 -3 -1]);
         end
         
         function name = getH5FileName(obj)
