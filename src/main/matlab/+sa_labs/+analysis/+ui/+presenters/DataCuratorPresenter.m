@@ -68,6 +68,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
             obj.addListener(v, 'ExecutePreProcessor', @obj.onViewExecutePreProcessor);
+            obj.addListener(v, 'AddParameter', @obj.onViewSelectedAddParamter);
+            obj.addListener(v, 'AddParametersToFilteredGroup', @obj.onViewFilteredAddParamters);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
@@ -363,6 +365,27 @@ classdef DataCuratorPresenter < appbox.Presenter
                 type = 'string';
             end
             obj.view.setFilterValueSuggestion(type, suggestedValues);
+        end
+        
+        function onViewSelectedAddParamter(obj, ~, ~)
+            entityMap = obj.getSelectedEntityMap();
+            values = entityMap.values;
+            entities = [values{:}];
+            if obj.addParameters(entities)
+                obj.populateDetailsForEntityMap(entityMap);
+            end
+        end
+        
+        function onViewFilteredAddParamters(obj, ~, ~)
+            cellData = obj.getFilteredCellData();
+            entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
+            obj.addParameters(entities);
+        end
+        
+        function tf = addParameters(obj, entities)
+            presenter = sa_labs.analysis.ui.presenters.AddPropertyPresenter(entities);
+            presenter.goWaitStop();
+            tf = ~isempty(presenter.result);
         end
         
         function onViewExecuteFilter(obj, ~, ~)
