@@ -66,17 +66,19 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
+            obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
             obj.addListener(v, 'ExecutePreProcessor', @obj.onViewExecutePreProcessor);
+            obj.addListener(v, 'DisablePlots', @obj.onViewDisabledPlots);
+            obj.addListener(v, 'AddDeleteTag', @obj.onViewAddDeleteTag);
+            obj.addListener(v, 'ClearDeleteTag', @obj.onViewClearDeleteTag);
+            obj.addListener(v, 'DeleteEntity', @obj.onViewSelectedDeleteEntity);
+            obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);
             obj.addListener(v, 'AddParameter', @obj.onViewSelectedAddParamter);
             obj.addListener(v, 'AddParametersToFilteredGroup', @obj.onViewFilteredAddParamters);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
-            obj.addListener(v, 'DisablePlots', @obj.onViewDisabledPlots);
-            obj.addListener(v, 'AddDeleteTag', @obj.onViewAddDeleteTag);
-            obj.addListener(v, 'ClearDeleteTag', @obj.onViewClearDeleteTag);
-            obj.addListener(v, 'DeleteEntity', @obj.onViewSelectedDeleteEntity);
         end
     end
     
@@ -296,6 +298,18 @@ classdef DataCuratorPresenter < appbox.Presenter
                 titles{end +1} = parsedName{end}; %#ok
             end
             obj.view.setPlotPannelTitles(titles)
+        end
+        
+        function onViewSelectedPopOutPlot(obj, ~, ~)
+            f = figure();
+            ax = axes('Parent', f);
+            entityMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entityMap, ax);
+        end
+        
+        function onViewSelectedPlotFromPanel(obj, ~, ~)
+            entityMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entityMap);
         end
         
         function onViewSelectedPreProcessor(obj, ~, ~)
@@ -566,25 +580,31 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
         end
         
-        function plotEntityMap(obj, entitiyMap)
-            import sa_labs.analysis.ui.views.EntityNodeType;
-            key = char(EntityNodeType.EPOCH);
+        function plotEntityMap(obj, entitiyMap, axes)
             
-            if isempty(entitiyMap) || ~ isKey(entitiyMap, key)
+            entities = obj.getSelectedEpoch(entitiyMap);
+            if isempty(entities)
                 return
             end
-            entities = entitiyMap(key);
-            plots = obj.view.getSelectedPlots();
+            
+            plot = obj.view.getActivePlot();
+            if nargin < 3
+                axes = obj.view.getAxes(plot);
+            end
+            entities = obj.getSelectedEpoch(entitiyMap);
             devices = obj.view.getSelectedDevices();
             
-            for i = 1 : numel(plots)
-                plot = plots{i};
-                functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
-                try
-                    functionDelegate(entities, devices, obj.view.getAxes(plot));
-                catch exception
-                    obj.view.showMessage(exception.message, 'Error');
-                end
+            if isempty(devices)
+                obj.view.showMessage('Device is empty. Click on cell level to select the amplifier');
+                return;
+            end
+            
+            functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
+            try
+                functionDelegate(entities, devices, axes);
+            catch exception
+                disp(exception.getReport);
+                obj.view.showMessage(exception.message, 'Error');
             end
         end
         

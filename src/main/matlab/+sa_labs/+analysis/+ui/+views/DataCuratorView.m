@@ -7,10 +7,12 @@ classdef DataCuratorView < appbox.View
         ShowFilteredEpochs
         SelectedNodes
         SelectedDevices
+        DisablePlots
         SelectedPlots
+        SelectedPlotFromPanel
         SelectedPreProcessor
         ExecutePreProcessor
-        DisablePlots
+        PopoutActivePlot
         SelectedCell
         SelectedFilter
         DoRefreshFilterTable
@@ -49,11 +51,11 @@ classdef DataCuratorView < appbox.View
         availablePlots
         tabPanel
         plotCard
+        disablePlotsCheckBox
         tagToDelete
         undoTagToDelete
         deleteTagged
-        disablePlotsCheckBox
-        goToEpochField
+        popoutPlot
         parameterPropertyGrid
         availableCellsMenu
         availablefilterMenu
@@ -218,6 +220,7 @@ classdef DataCuratorView < appbox.View
             obj.tabPanel = uix.TabPanel( ...
                 'Parent', signalDetailLayout, ...
                 'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
+                'SelectionChangedFcn', @(h,d)notify(obj, 'SelectedPlotFromPanel'),...
                 'Padding', 11,...
                 'TabWidth', 100,... 
                 'BackgroundColor', 'w');
@@ -250,15 +253,14 @@ classdef DataCuratorView < appbox.View
                 'String', 'Delete Tagged', ...
                 'Enable', 'on', ...
                 'Callback', @(h,d)notify(obj, 'DeleteEntity'));
-            Label( ...
+            obj.popoutPlot = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
-                'String', 'Go To Epoch:');
-            obj.goToEpochField = uicontrol( ...
-                'Parent', signalDetailControlLayout, ...
-                'Style', 'edit', ...
-                'HorizontalAlignment', 'left');
+                'Style', 'pushbutton', ...
+                'String', 'PopOut Plot', ...
+                'Enable', 'on', ...
+                'Callback', @(h,d)notify(obj, 'PopoutActivePlot'));
             uix.Empty('Parent', signalDetailControlLayout);
-            set(signalDetailControlLayout, 'Widths', [20 100 100 100 100 100 80 -2]);
+            set(signalDetailControlLayout, 'Widths', [20 100 100 100 100 100 -2]);
             
             set(signalDetailLayout, 'Heights', [-1 30]);
             set(signalLayout, 'Widths', [-1.2 -7]);
@@ -467,6 +469,12 @@ classdef DataCuratorView < appbox.View
         function ax = getAxes(obj, plot)
             plotField = obj.getValidPlotField(plot);
             ax = obj.plotCard.(plotField).axes;
+        end
+        
+        function plot = getActivePlot(obj)
+            plots = get(obj.availablePlots, 'Value');
+            index = get(obj.tabPanel, 'Selection');
+            plot = plots{index};
         end
         
         function setAvailablePreProcessorFunctions(obj, names, values)
