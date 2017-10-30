@@ -67,7 +67,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
+            obj.addListener(v, 'DisablePlots', @obj.onViewDisabledPlots);
             obj.addListener(v, 'AddDeleteTag', @obj.onViewAddDeleteTag);
+            obj.addListener(v, 'ClearDeleteTag', @obj.onViewClearDeleteTag);
             obj.addListener(v, 'DeleteEntity', @obj.onViewSelectedDeleteEntity);
         end
     end
@@ -81,6 +83,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 functionNames{end + 1} = [obj.DATA_CURATOR_PLOTS '.'  plot]; %#ok
             end
             obj.view.setAvailablePlots(plots, functionNames);
+            obj.view.disablePlotPannel(true);
         end
         
         function populateAvailablePreProcessors(obj)
@@ -92,7 +95,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 for name = each(names)
                     functionNames{end + 1} = [package '.' name]; %#ok
                 end
-                preProcessors = [preProcessors names{:}];
+                preProcessors = [preProcessors names{:}]; %#ok
             end
             obj.view.setAvailablePreProcessorFunctions(preProcessors, functionNames);
             
@@ -127,6 +130,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             enabled = numel(cellData) > 0;
             obj.view.enableAvailablePlots(enabled);
             obj.view.enableAvailablePreProcessorFunctions(enabled);
+            obj.view.disablePlotPannel(~ enabled);
         end
         
         function addCellDataNode(obj, cellData)
@@ -221,6 +225,15 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.processSelectedEntity(entitiyMap);
         end
         
+        function onViewDisabledPlots(obj, ~, ~)
+            disabled = obj.view.hasPlotsDisabled();
+            obj.view.disablePlotPannel(disabled);
+            if ~ disabled
+                entitiyMap = obj.getSelectedEntityMap();
+                obj.plotEntityMap(entitiyMap);
+            end
+        end
+        
         function cellData = getFilteredCellData(obj)
             cellName = obj.view.getSelectedCellName();
             cellDataArray = obj.view.getExperimentData();
@@ -300,7 +313,9 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function processSelectedEntity(obj, entitiyMap)
             obj.preProcessEntityMap(entitiyMap);
-            obj.plotEntityMap(entitiyMap);
+            if ~ obj.view.hasPlotsDisabled()
+                obj.plotEntityMap(entitiyMap);
+            end
             obj.populateDetailsForEntityMap(entitiyMap);
             obj.view.update();
         end
@@ -347,17 +362,24 @@ classdef DataCuratorPresenter < appbox.Presenter
         function preProcessEntityMap(obj, entitiyMap)
             import sa_labs.analysis.ui.views.EntityNodeType;
 
-            entities = obj.getSelectedCell(entitiyMap);
-            if ~ isempty(entities)
-                preProcesorHandles = obj.getPreProcessorHandle(char(EntityNodeType.CELLS));
-                obj.offlineAnalysisManager.preProcessCellData(entities, preProcesorHandles);
+            cellEntities = obj.getSelectedCell(entitiyMap);
+            epochEntities = obj.getSelectedEpoch(entitiyMap);
+            needsBusyPresenter =  numel(cellEntities) + numel(epochEntities) > 5;
+            
+            if needsBusyPresenter
+                p = obj.view.showBusy('Pre processing..');
+                d = onCleanup(@()delete(p));
             end
-
-            entities = obj.getSelectedEpoch(entitiyMap);
-            if ~ isempty(entities)
-                obj.updatePreProcessorParameters(entities);
+            
+            if ~ isempty(cellEntities)
+                preProcesorHandles = obj.getPreProcessorHandle(char(EntityNodeType.CELLS));
+                obj.offlineAnalysisManager.preProcessCellData(cellEntities, preProcesorHandles);
+            end
+            
+            if ~ isempty(epochEntities)
+                obj.updatePreProcessorParameters(epochEntities);
                 preProcesorHandles = obj.getPreProcessorHandle(char(EntityNodeType.EPOCH));
-                obj.offlineAnalysisManager.preProcessEpochData(entities, preProcesorHandles);
+                obj.offlineAnalysisManager.preProcessEpochData(epochEntities, preProcesorHandles);
             end
         end
 
@@ -492,10 +514,24 @@ classdef DataCuratorPresenter < appbox.Presenter
         function onViewAddDeleteTag(obj, ~, ~)
             epochs = obj.getSelectedEpoch();
             for epoch = each(epochs)
-                epoch.excluded = true;
+                if ~ epoch.excluded
+                    epoch.excluded = true;
+                    node = obj.uuidToNode(epoch.uuid);
+                    name = obj.view.getNodeName(node);
+                    obj.view.setNodeName(node, strcat('To delete-', name));
+                end
+            end
+        end
+        
+        function onViewClearDeleteTag(obj, ~, ~)
+            epochs = obj.getSelectedEpoch();
+            for epoch = each(epochs)
+                if epoch.excluded
+                    epoch.excluded = false;
+                end
                 node = obj.uuidToNode(epoch.uuid);
                 name = obj.view.getNodeName(node);
-                obj.view.setNodeName(node, strcat('To delete-', name));
+                obj.view.setNodeName(node, strrep(name, 'To delete-', ''));
             end
         end
         
@@ -505,7 +541,6 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function deleteSelectedEntity(obj)
             node = obj.view.getCellFolderNode();
-            obj.view.collapseNode(node);
             cellDatas = obj.view.getExperimentData();
             
             result = obj.view.showMessage( ...
@@ -516,6 +551,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             if ~strcmp(result, 'Delete')
                 return;
             end
+            obj.view.collapseNode(node);
             updatedCellDatas = obj.offlineAnalysisManager.deleteEpochFromCells(cellDatas);
             
             for updateCellData = each(updatedCellDatas)
