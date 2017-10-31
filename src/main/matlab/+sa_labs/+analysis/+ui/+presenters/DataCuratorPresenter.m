@@ -224,9 +224,15 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function showFilteredEpochs(obj)
             cellData = obj.getFilteredCellData();
-            for epoch = each(cellData.epochs)
-                unFiltered = isempty(epoch.filtered) || ~ epoch.filtered;
-                if unFiltered && isKey(obj.uuidToNode, epoch.uuid)
+            unFilteredEpochs = linq(cellData.epochs).where(@(epoch) isempty(epoch.filtered) || ~ epoch.filtered).toArray();
+            
+            if numel(unFilteredEpochs) == numel(cellData.epochs)
+                obj.view.showError(['No epochs are filtered for cell ' cellData.recordingLabel]);
+                return;
+            end
+            
+            for epoch = each(unFilteredEpochs)
+                if isKey(obj.uuidToNode, epoch.uuid)
                     node = obj.uuidToNode(epoch.uuid);
                     obj.view.removeNode(node);
                     remove(obj.uuidToNode, epoch.uuid);
@@ -410,7 +416,6 @@ classdef DataCuratorPresenter < appbox.Presenter
                 epoch.filtered = false;
             end
             obj.view.setConsoleText('processing !');
-
             query = linq(1 : numel(cellData.epochs));
             filterRows = obj.view.getFilterRows();
             
@@ -426,8 +431,12 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             enabled = numel(filteredIndices) > 0;
             obj.view.enableAddAndDeleteParameters(enabled);
-            obj.view.enableShowFilteredEpochs(enabled);
             
+            obj.view.enableShowFilteredEpochs(enabled);
+            if obj.view.canShowFilteredEpochs()
+                obj.showFilteredEpochs();
+            end
+                
             if enabled
                 [p, v] = cellData.getUniqueParamValues(filteredIndices);
                 result = KeyValueEntity(containers.Map(p, v));
@@ -609,6 +618,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function updateStateOfControls(obj)
+            
         end
         
         function loadSettings(obj)
