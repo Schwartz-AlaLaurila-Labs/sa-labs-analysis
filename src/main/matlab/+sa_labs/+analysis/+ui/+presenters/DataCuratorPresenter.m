@@ -457,12 +457,15 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function processSelectedEntity(obj, entitiyMap)
-            obj.preProcessEntityMap(entitiyMap);
+            
+            if obj.view.hasValidPreProcessorSelected()
+                obj.preProcessEntityMap(entitiyMap);
+                obj.populateDetailsForEntityMap(entitiyMap);
+            end
+            
             if ~ obj.view.hasPlotsDisabled()
                 obj.plotEntityMap(entitiyMap);
             end
-            obj.populateDetailsForEntityMap(entitiyMap);
-            obj.view.update();
         end
         
         function populateDevicesForCell(obj, entitiyMap)

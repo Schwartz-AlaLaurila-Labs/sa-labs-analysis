@@ -485,7 +485,12 @@ classdef DataCuratorView < appbox.View
         function functionNames = getSelectedPreProcessorFunction(obj)
             functionNames = get(obj.availablePreProcessorFunctions, 'Value');
         end
-                
+
+        function tf = hasValidPreProcessorSelected(obj)
+            functionNames = get(obj.availablePreProcessorFunctions, 'Value');
+            tf =  ~ isempty([functionNames{:}]);
+        end
+        
         function setPreProcessorParameters(obj, properties)
              set(obj.preProcessorPropertyGrid, 'Properties', properties);
              set(obj.preProcessorPropertyGrid, 'Enable', true);
