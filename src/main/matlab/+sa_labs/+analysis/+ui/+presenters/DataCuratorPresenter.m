@@ -464,12 +464,12 @@ classdef DataCuratorPresenter < appbox.Presenter
             
             if obj.view.hasValidPreProcessorSelected()
                 obj.preProcessEntityMap(entitiyMap);
-                obj.populateDetailsForEntityMap(entitiyMap);
             end
             
             if ~ obj.view.hasPlotsDisabled()
                 obj.plotEntityMap(entitiyMap);
             end
+            obj.populateDetailsForEntityMap(entitiyMap);
         end
         
         function populateDevicesForCell(obj, entitiyMap)
