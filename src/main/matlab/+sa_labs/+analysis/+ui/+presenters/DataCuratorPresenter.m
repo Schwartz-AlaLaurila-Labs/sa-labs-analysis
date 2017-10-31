@@ -148,12 +148,19 @@ classdef DataCuratorPresenter < appbox.Presenter
             pattern = obj.view.getH5FileName();
             p = obj.view.showBusy('Loading h5 file..');
             d = onCleanup(@()delete(p));
+            
+            obj.closeExisting();
             cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
             
             obj.updatePlotPanel();
             obj.view.setExperimentNode(pattern, cellDataArray);
             obj.populateEntityTree(cellDataArray);
             obj.populateFilterDetails(cellDataArray);
+        end
+        
+        function closeExisting(obj)
+            node = obj.view.getCellFolderNode();
+            obj.view.removeChildNodes(node);
         end
         
         function onViewReParse(obj, ~, ~)
@@ -166,12 +173,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             if ~strcmp(result, 'Yes')
                 return;
             end
-            
-            node = obj.view.getCellFolderNode();
-            obj.view.removeChildNodes(node);
-            
             p = obj.view.showBusy('Parsing h5 file..');
             d = onCleanup(@()delete(p));
+            
             obj.offlineAnalysisManager.parseSymphonyFiles(pattern);
             obj.intializeCurator();
         end
