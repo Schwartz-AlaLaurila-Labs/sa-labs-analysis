@@ -31,6 +31,11 @@ for name = each(functionNames)
     end
     uiFields = [uiFields currentUIFields]; %#ok
 end
+
+if isempty(uiFields)
+     uiFields = uiextras.jide.PropertyGridField.empty(0,1);
+end
+
 end
 
 function s = flattenStructure(structure)

@@ -579,10 +579,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                     defaultFields(i).Value = oldField.Value;
                 end
             end
-            
-            if ~ isempty(defaultFields)
-                obj.view.setPreProcessorParameters(defaultFields);
-            end
+            obj.view.setPreProcessorParameters(defaultFields);
             
             function tf = isFunctionHandle(value)
                 tf = ischar(value) && ~ isempty((strfind(value, '@')) == 1);
@@ -703,6 +700,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             if ~strcmp(result, 'Delete')
                 return;
             end
+            p = obj.view.showBusy('Deleting epochs..');
+            d = onCleanup(@()delete(p));
+                
             obj.view.collapseNode(node);
             updatedCellDatas = obj.offlineAnalysisManager.deleteEpochFromCells(cellDatas);
             
