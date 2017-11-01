@@ -75,7 +75,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'DeleteEntity', @obj.onViewSelectedDeleteEntity);
             obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);
             obj.addListener(v, 'AddParameter', @obj.onViewSelectedAddParamter);
+            obj.addListener(v, 'RemoveParameter', @obj.onViewSelectedRemoveParamter);
             obj.addListener(v, 'AddParametersToFilteredGroup', @obj.onViewFilteredAddParamters);
+            obj.addListener(v, 'RemoveParametersFromFilteredGroup', @obj.onViewSelectedRemoveParameters);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
@@ -267,22 +269,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.expandNode(node);
         end
         
-        function populateFilterDetails(obj, cellDataArray)
-            if isempty(cellDataArray)
-                return
-            end
-            cellNames = {cellDataArray.recordingLabel};
-            obj.view.setAvailableCellNames(cellNames);
-            obj.populateFilterProperties();
-        end
-        
-        function populateFilterProperties(obj)
-            cellData = obj.getFilteredCellData();
-            properties = cellData.getEpochKeysetUnion();
-            obj.view.setFilterProperty(properties);
-            obj.view.enableFilters(numel(cellData) == 1);
-        end
-        
         function onViewSelectedDevices(obj, ~, ~)
             entitiyMap = obj.getSelectedEntityMap();
             obj.preProcessEntityMap(entitiyMap);
@@ -355,6 +341,40 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
         end
         
+        function onViewSelectedAddParamter(obj, ~, ~)
+            entityMap = obj.getSelectedEntityMap();
+            values = entityMap.values;
+            entities = [values{:}];
+            if obj.addParameters(entities)
+                obj.populateDetailsForEntityMap(entityMap);
+            end
+        end
+        
+        function onViewSelectedRemoveParamter(obj, ~, ~)
+            entityMap = obj.getSelectedEntityMap();
+            key = obj.view.getSelectedParameterNameFromPropertyGrid();
+            values = entityMap.values;
+            entity = [values{:}];
+            remove(entity.attributes, key);
+            obj.populateDetailsForEntityMap(entityMap);
+        end
+        
+        function populateFilterDetails(obj, cellDataArray)
+            if isempty(cellDataArray)
+                return
+            end
+            cellNames = {cellDataArray.recordingLabel};
+            obj.view.setAvailableCellNames(cellNames);
+            obj.populateFilterProperties();
+        end
+        
+        function populateFilterProperties(obj)
+            cellData = obj.getFilteredCellData();
+            properties = cellData.getEpochKeysetUnion();
+            obj.view.setFilterProperty(properties);
+            obj.view.enableFilters(numel(cellData) == 1);
+        end
+          
         function cellData = getFilteredCellData(obj)
             cellName = obj.view.getSelectedCellName();
             cellDataArray = obj.view.getExperimentData();
@@ -391,27 +411,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.setFilterValueSuggestion(type, suggestedValues);
         end
         
-        function onViewSelectedAddParamter(obj, ~, ~)
-            entityMap = obj.getSelectedEntityMap();
-            values = entityMap.values;
-            entities = [values{:}];
-            if obj.addParameters(entities)
-                obj.populateDetailsForEntityMap(entityMap);
-            end
-        end
-        
-        function onViewFilteredAddParamters(obj, ~, ~)
-            cellData = obj.getFilteredCellData();
-            entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
-            obj.addParameters(entities);
-        end
-        
-        function tf = addParameters(obj, entities)
-            presenter = sa_labs.analysis.ui.presenters.AddPropertyPresenter(entities);
-            presenter.goWaitStop();
-            tf = ~isempty(presenter.result);
-        end
-        
         function onViewExecuteFilter(obj, ~, ~)
             import sa_labs.analysis.entity.*;
             
@@ -429,7 +428,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 end
             end
             filteredIndices = query.toArray();
-           
+            
             for index = each(filteredIndices)
                 cellData.epochs(index).filtered = true;
             end
@@ -440,7 +439,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             if obj.view.canShowFilteredEpochs()
                 obj.showFilteredEpochs();
             end
-                
+            
             if enabled
                 [p, v] = cellData.getUniqueParamValues(filteredIndices);
                 result = KeyValueEntity(containers.Map(p, v));
@@ -448,6 +447,29 @@ classdef DataCuratorPresenter < appbox.Presenter
                 result = 'No matching records found !';
             end
             obj.view.setConsoleText(result);
+        end
+        
+        function onViewFilteredAddParamters(obj, ~, ~)
+            cellData = obj.getFilteredCellData();
+            entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
+            obj.addParameters(entities);
+        end
+        
+        function tf = addParameters(obj, entities)
+            presenter = sa_labs.analysis.ui.presenters.AddPropertyPresenter(entities);
+            presenter.goWaitStop();
+            tf = ~isempty(presenter.result);
+            entityMap = obj.getSelectedEntityMap();
+            obj.populateDetailsForEntityMap(entityMap);
+        end
+        
+        function onViewSelectedRemoveParameters(obj, ~, ~)
+            cellData = obj.getFilteredCellData();
+            entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
+            presenter = sa_labs.analysis.ui.presenters.RemovePropertiesPresenter(entities);
+            presenter.goWaitStop();
+            entityMap = obj.getSelectedEntityMap();
+            obj.populateDetailsForEntityMap(entityMap);
         end
         
         function onViewSelectedNodes(obj, ~, ~)
