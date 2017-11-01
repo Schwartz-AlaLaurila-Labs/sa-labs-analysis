@@ -9,6 +9,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         log
         settings
         uuidToNode
+        filterMap
     end
     
     properties (Constant)
@@ -76,11 +77,14 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);
             obj.addListener(v, 'AddParameter', @obj.onViewSelectedAddParamter);
             obj.addListener(v, 'RemoveParameter', @obj.onViewSelectedRemoveParamter);
-            obj.addListener(v, 'AddParametersToFilteredGroup', @obj.onViewFilteredAddParamters);
-            obj.addListener(v, 'RemoveParametersFromFilteredGroup', @obj.onViewSelectedRemoveParameters);
+            obj.addListener(v, 'SelectedCell', @obj.onViewSelectedCell);
+            obj.addListener(v, 'SelectedFilter', @obj.onViewSelectedFilter);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
             obj.addListener(v, 'ExecuteFilter', @obj.onViewExecuteFilter);
+            obj.addListener(v, 'SaveConfiguredFilter', @obj.onViewSaveFilter);
+            obj.addListener(v, 'AddParametersToFilteredGroup', @obj.onViewFilteredAddParamters);
+            obj.addListener(v, 'RemoveParametersFromFilteredGroup', @obj.onViewSelectedRemoveParameters);
         end
     end
     
@@ -112,9 +116,9 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function populateCellDataFilters(obj)
-            filters = obj.offlineAnalysisManager.getCellDataFilters();
-            if ~ isempty(filters)
-                obj.view.loadCellDataFilters({filters.name});
+            obj.filterMap = obj.offlineAnalysisManager.getCellDataFilters();
+            if ~ isempty(obj.filterMap)
+                obj.view.loadCellDataFilters([{'None'}, obj.filterMap.keys]);
             end
         end
 
@@ -221,14 +225,16 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function onViewShowFilteredEpochs(obj, ~, ~)
-            if obj.view.canShowFilteredEpochs()
-                obj.showFilteredEpochs();
-            else
-                obj.showAllEpochs();
-            end
+            tf = obj.view.canShowFilteredEpochs();
+            obj.showFilteredEpochs(tf);
         end
         
-        function showFilteredEpochs(obj)
+        function showFilteredEpochs(obj, status)
+            if ~ status
+                 obj.showAllEpochs();
+                 return
+            end
+            
             cellData = obj.getFilteredCellData();
             unFilteredEpochs = linq(cellData.epochs).where(@(epoch) isempty(epoch.filtered) || ~ epoch.filtered).toArray();
             
@@ -345,8 +351,10 @@ classdef DataCuratorPresenter < appbox.Presenter
             entityMap = obj.getSelectedEntityMap();
             values = entityMap.values;
             entities = [values{:}];
+            
             if obj.addParameters(entities)
                 obj.populateDetailsForEntityMap(entityMap);
+                obj.populateFilterProperties();
             end
         end
         
@@ -355,8 +363,49 @@ classdef DataCuratorPresenter < appbox.Presenter
             key = obj.view.getSelectedParameterNameFromPropertyGrid();
             values = entityMap.values;
             entity = [values{:}];
+            
+            if ~ isKey(entity.attributes, key)
+                obj.view.showError('Select valid parameter from property grid');
+                return
+            end
             remove(entity.attributes, key);
             obj.populateDetailsForEntityMap(entityMap);
+            obj.offlineAnalysisManager.saveCellData(entity);
+            obj.populateFilterProperties();
+       end
+        
+        function onViewSelectedCell(obj, ~, ~)
+            obj.populateFilterProperties();
+        end
+        
+        function onViewSelectedFilter(obj, ~, ~)
+            name = obj.view.getSelectedFilterName();
+            if strcmpi(name, 'None')
+                obj.view.clearFilterProperties();
+                obj.view.setSaveFilterName('');
+                return;
+            end
+            filterTable = obj.filterMap(name);
+            obj.view.clearFilterProperties();
+            obj.view.enableAddAndDeleteParameters(false);
+            obj.view.updateFilterProperties(filterTable);
+            obj.view.setSaveFilterName(name);
+        end
+        
+        function onViewSaveFilter(obj, ~, ~)
+            name = obj.view.getSaveFilterName();
+            if isempty(name)
+                obj.view.showError('Filter name cannot be empty');
+                return;
+            end
+            filterData = obj.view.getFilterRows();
+            obj.offlineAnalysisManager.saveCellDataFilter(name, filterData);
+            obj.populateCellDataFilters();
+        end
+        
+        function onViewClearFilterProperties(obj, ~, ~)
+            obj.view.clearFilterProperties();
+            obj.view.enableAddAndDeleteParameters(false);
         end
         
         function populateFilterDetails(obj, cellDataArray)
@@ -373,6 +422,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             properties = cellData.getEpochKeysetUnion();
             obj.view.setFilterProperty(properties);
             obj.view.enableFilters(numel(cellData) == 1);
+            obj.view.update();
         end
           
         function cellData = getFilteredCellData(obj)
@@ -414,53 +464,79 @@ classdef DataCuratorPresenter < appbox.Presenter
         function onViewExecuteFilter(obj, ~, ~)
             import sa_labs.analysis.entity.*;
             
+            filterData = obj.view.getFilterRows();
             cellData = obj.getFilteredCellData();
-            for epoch = each(cellData.epochs)
-                epoch.filtered = false;
-            end
+            epochs = cellData.epochs;
+
+            arrayfun(@(e) setFiltered(e, false), epochs)
             obj.view.setConsoleText('processing !');
-            query = linq(1 : numel(cellData.epochs));
-            filterRows = obj.view.getFilterRows();
+            query = linq(1 : numel(epochs));
             
-            for row = each(filterRows)
-                if ~ isempty(row.predicate)
-                    query = query.where(@(index) row.predicate(cellData.epochs(index)));
-                end
+            rows = size(filterData, 1);
+            for row = 1 : rows
+                predicate = obj.getFilterPredicate(filterData(row, :));
+                query = query.where(@(index) predicate(epochs(index)));
             end
             filteredIndices = query.toArray();
             
-            for index = each(filteredIndices)
-                cellData.epochs(index).filtered = true;
+            if filteredIndices ~= numel(epochs)
+                arrayfun(@(e) setFiltered(e, true), epochs(filteredIndices))
             end
+                
             enabled = numel(filteredIndices) > 0;
             obj.view.enableAddAndDeleteParameters(enabled);
-            
             obj.view.enableShowFilteredEpochs(enabled);
-            if obj.view.canShowFilteredEpochs()
-                obj.showFilteredEpochs();
-            end
+            result = 'No matching records found !';
             
             if enabled
                 [p, v] = cellData.getUniqueParamValues(filteredIndices);
                 result = KeyValueEntity(containers.Map(p, v));
-            else
-                result = 'No matching records found !';
             end
             obj.view.setConsoleText(result);
+            tf = obj.view.canShowFilteredEpochs() && numel(filteredIndices) ~= numel(epochs);
+            obj.showFilteredEpochs(tf);
+            
+            function setFiltered(epoch, tf)
+                epoch.filtered = tf;
+            end
+        end
+        
+        function predicate = getFilterPredicate(obj, rowData)
+            property = rowData{1};
+            condition = rowData{2};
+            values =  rowData{3};
+            
+            index = cellfun(@(valueSet) ismember(condition, valueSet), obj.view.FILTER_CONDITION_MAP.values);
+            keys = obj.view.FILTER_CONDITION_MAP.keys;
+            type = keys{index};
+            
+            if strcmp(type, 'numeric')
+                predicateCondition = str2func(strcat('@(data, values) any(data.get(''', property, ''')', condition, 'values)'));
+                values = str2double(values);
+                
+            else
+                predicateCondition = str2func(strcat('@(data, values) any(', condition, '(data.get(''', property, '''), values))'));
+            end
+            predicate = @(data) predicateCondition(data, values);
         end
         
         function onViewFilteredAddParamters(obj, ~, ~)
             cellData = obj.getFilteredCellData();
             entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
             obj.addParameters(entities);
+            
+            entityMap = obj.getSelectedEntityMap();
+            obj.populateDetailsForEntityMap(entityMap);
+            obj.populateFilterProperties();
         end
         
         function tf = addParameters(obj, entities)
             presenter = sa_labs.analysis.ui.presenters.AddPropertyPresenter(entities);
             presenter.goWaitStop();
             tf = ~isempty(presenter.result);
-            entityMap = obj.getSelectedEntityMap();
-            obj.populateDetailsForEntityMap(entityMap);
+            if tf
+                obj.offlineAnalysisManager.saveCellData(entities);
+            end
         end
         
         function onViewSelectedRemoveParameters(obj, ~, ~)
@@ -468,8 +544,12 @@ classdef DataCuratorPresenter < appbox.Presenter
             entities = linq(cellData.epochs).where(@ (e) e.filtered).toArray();
             presenter = sa_labs.analysis.ui.presenters.RemovePropertiesPresenter(entities);
             presenter.goWaitStop();
+            
+            obj.offlineAnalysisManager.saveCellData(entities);
+            
             entityMap = obj.getSelectedEntityMap();
             obj.populateDetailsForEntityMap(entityMap);
+            obj.populateFilterProperties();
         end
         
         function onViewSelectedNodes(obj, ~, ~)
@@ -741,7 +821,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             obj.populateEntityTree(updatedCellDatas);
         end
-
-    end
     
+        
+    end
 end

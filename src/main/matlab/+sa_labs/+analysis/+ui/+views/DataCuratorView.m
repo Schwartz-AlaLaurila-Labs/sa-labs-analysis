@@ -326,7 +326,7 @@ classdef DataCuratorView < appbox.View
                'CellSelectionCallback', @(h, d)notify(obj, 'SelectedFilterRow', sa_labs.analysis.ui.util.UiEventData(d)),...
                'CellEditCallback', @(h, d)notify(obj, 'SelectedFilterProperty', sa_labs.analysis.ui.util.UiEventData(d)),...
                'ColumnPreferredWidth', [40 20 100]);
-           obj.filterTable.Data = cell(10, 3);
+           obj.filterTable.Data = cell(7, 3);
            
            filterControlsLayout = uix.HBox( ...
                'Parent', filterLayout, ...
@@ -572,6 +572,13 @@ classdef DataCuratorView < appbox.View
            obj.availableCellsMenu.setString(cellNames); 
         end
         
+        function updateFilterProperties(obj, data)
+             rows = size(data, 1);
+             for i = 1 : rows
+                 obj.filterTable.Data(i, :) = data(i, :);
+             end
+        end
+        
         function cellName = getSelectedCellName(obj)
             cellNames = get(obj.availableCellsMenu, 'String');
             index = obj.availableCellsMenu.getValue;
@@ -579,7 +586,13 @@ classdef DataCuratorView < appbox.View
         end
 
         function loadCellDataFilters(obj, filterNames)
-            set(obj.availablefilterMenu, 'String', filterNames); 
+            set(obj.availablefilterMenu, 'String', filterNames);
+        end
+        
+        function name = getSelectedFilterName(obj)
+            names = get(obj.availablefilterMenu, 'String');
+            index = get(obj.availablefilterMenu, 'Value');
+            name = names{index};
         end
         
         function setFilterProperty(obj, properties)
@@ -597,11 +610,23 @@ classdef DataCuratorView < appbox.View
             set(obj.availablefilterMenu, 'Enable', appbox.onOff(tf));
         end
         
+        function clearFilterProperties(obj)
+             obj.filterTable.Data = cell(7, 3);
+        end
+        
+        function name = getSaveFilterName(obj)
+            name = get(obj.filterNameField, 'String');
+        end
+        
+        function setSaveFilterName(obj, name)
+            set(obj.filterNameField, 'String', name);
+        end
+        
         function property = getSelectedFilterProperty(obj, row)
             property = obj.filterTable.Data{row, 1};
         end
         
-        function filterRows = getFilterRows(obj)
+        function data = getFilterRows(obj)
             data = obj.filterTable.Data;
             rows = size(data, 1);
             filterRows = [];
@@ -609,9 +634,10 @@ classdef DataCuratorView < appbox.View
             for i = 1 : rows
                 rowData = data(i, :);
                 if ~ any(cellfun(@isempty, rowData))
-                    filterRows(i).predicate = obj.getFilterPredicate(rowData);  %#ok
+                    filterRows  = [filterRows, i];  %#ok
                 end
             end
+            data = data(filterRows, :);
         end
         
         function enableAvailablePlots(obj, tf)
@@ -703,25 +729,6 @@ classdef DataCuratorView < appbox.View
     
     methods (Access = protected)
                 
-        function predicate = getFilterPredicate(obj, rowData)
-            property = rowData{1};
-            condition = rowData{2};
-            values =  rowData{3};
-            
-            index = cellfun(@(valueSet) ismember(condition, valueSet), obj.FILTER_CONDITION_MAP.values);
-            keys = obj.FILTER_CONDITION_MAP.keys;
-            type = keys{index};
-            
-            if strcmp(type, 'numeric')
-                predicateCondition = str2func(strcat('@(data, values) any(data.get(''', property, ''')', condition, 'values)'));
-                values = str2double(values);
-                
-            else
-                predicateCondition = str2func(strcat('@(data, values) any(', condition, '(data.get(''', property, '''), values))'));
-            end
-            predicate = @(data) predicateCondition(data, values);
-        end
-        
         function plotField = getValidPlotField(obj, name)
              plotField = matlab.lang.makeValidName(name);
         end
