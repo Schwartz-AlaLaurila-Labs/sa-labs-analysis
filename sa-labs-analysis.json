@@ -8,7 +8,7 @@
 		"name": "sa-labs-analysis",
 		"pathPlacement": "append",
 		"requirementHook": "",
-		"subfolder": "",
+		"subfolder": "src",
 		"toolboxRoot": "",
 		"type": "git",
 		"update": "",
@@ -24,7 +24,7 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "../",
+		"toolboxRoot": "lib",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-core"
@@ -39,7 +39,7 @@
 		"pathPlacement": "append",
 		"requirementHook": "",
 		"subfolder": "",
-		"toolboxRoot": "../",
+		"toolboxRoot": "lib",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-util"
@@ -59,6 +59,21 @@
 		"update": "",
 	    "url": "https:\/\/github.com\/Schwartz-AlaLaurila-Labs\/sa-labs-analysis-preference"
 	},
+	{
+		"extra": "",
+		"flavor": "",
+		"hook": "javaaddpath(fullfile(getfield(what('+yaml'), 'path'), 'external', 'snakeyaml-1.9.jar'))",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "yamlmatlab",
+		"pathPlacement": "append",
+		"requirementHook": "",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+	    "url": "https://github.com/ewiger/yamlmatlab"
+	},    
     {
 		"extra": "",
 		"flavor": "",
@@ -74,5 +89,4 @@
 		"update": "",
 	    "url": ""
 	}
-
 ]
