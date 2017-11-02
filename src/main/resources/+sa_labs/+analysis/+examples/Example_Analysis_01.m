@@ -1,29 +1,15 @@
 %% Set the matlab path !
-tbUseProject('sa-labs-analysis');
+tbUseProject('sa-labs-analysis', 'online', false); 
+
+%% Load the curator GUI
+
+ui_test.testCurator();
 
 %% Create the analysis project
 
 clear;
-[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis', 'experiments', '2017-10-02', 'override', true);
+[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis', 'experiments', '101217D', 'override', true);
 % open the project file
-
-%% Create and run the pre-processor ! 
-%
-% Although spike detection is not a pre processing step, for the time being
-% including spike detection process in the pre-processing step.
-%
-% a) Declare the pre processor function
-
-preProcessors = {@(d) sa_labs.pre_processors.addSpikesToEpoch(d, 'device', {'Amp1', 'Amp2', 'Amp3'}, 'checkDetection', false)};
-%
-% b) run the preProcess for the selected cells present in project in order
-% to save some time
-
-cellDataArray = project.getCellDataArray();
-% detecting spikes for the first cell data
-offlineAnalysisManager.preProcess(cellDataArray(1), preProcessors,  'enabled', [false]);
-%
-%
 open(project.file)
 %% Create a simple search tree definition
 

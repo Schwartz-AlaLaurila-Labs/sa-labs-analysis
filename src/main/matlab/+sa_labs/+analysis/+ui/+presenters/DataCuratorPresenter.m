@@ -479,7 +479,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             filteredIndices = query.toArray();
             
-            if filteredIndices ~= numel(epochs)
+            if numel(filteredIndices) ~= numel(epochs)
                 arrayfun(@(e) setFiltered(e, true), epochs(filteredIndices))
             end
                 
