@@ -15,6 +15,7 @@ target/
 logs/
 lib/
 *checkpoint.ipynb
+*.tap
 
 # Resources
 src/main/resources/preference/

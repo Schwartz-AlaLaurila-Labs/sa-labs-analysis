@@ -554,22 +554,26 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function onViewSelectedNodes(obj, ~, ~)
             tic
+            obj.view.update();
             entitiyMap = obj.getSelectedEntityMap();
             obj.populateDevicesForCell(entitiyMap);
             obj.processSelectedEntity(entitiyMap);
-            obj.view.update();
             elapsedTime = toc;
             obj.log.info(['selected node processing time: ' num2str(elapsedTime)]);
         end
         
         function processSelectedEntity(obj, entitiyMap)
-            
-            if obj.view.hasValidPreProcessorSelected()
-                obj.preProcessEntityMap(entitiyMap);
-            end
-            
-            if ~ obj.view.hasPlotsDisabled()
-                obj.plotEntityMap(entitiyMap);
+            try
+                if obj.view.hasValidPreProcessorSelected()
+                    obj.preProcessEntityMap(entitiyMap);
+                end
+                
+                if ~ obj.view.hasPlotsDisabled()
+                    obj.plotEntityMap(entitiyMap);
+                end
+            catch exception
+                disp(exception.getReport);
+                obj.view.showError(exception.message);
             end
             obj.populateDetailsForEntityMap(entitiyMap);
         end
@@ -715,12 +719,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             
             functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
-            try
-                functionDelegate(entities, devices, axes);
-            catch exception
-                disp(exception.getReport);
-                obj.view.showMessage(exception.message, 'Error');
-            end
+            functionDelegate(entities, devices, axes);
         end
         
         function updateStateOfControls(obj)

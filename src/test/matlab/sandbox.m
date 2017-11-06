@@ -1,9 +1,7 @@
-function savedFileName = sandbox(file, cellLabel)
-    [match, ~] = regexp(cellLabel, '[0-9]+' ,'match','split');
-    if ~ isempty(match)
-        savedFileName = [file 'c' match{:}];
-    else 
-        savedFileName = file;
-    end
+function sandbox()
+    plotCatalog = com.mathworks.mlwidgets.graphics.PlotCatalog.getInstance();
+    noise = randn(1, 1000);
+    plotCatalog.setPlottedVars('noise');
+    plotCatalog.show();
 end
 
