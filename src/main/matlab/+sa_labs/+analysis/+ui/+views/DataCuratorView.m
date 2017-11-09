@@ -7,12 +7,17 @@ classdef DataCuratorView < appbox.View
         ShowFilteredEpochs
         SelectedNodes
         SelectedDevices
-        DisablePlots
         SelectedPlots
         SelectedPlotFromPanel
         SelectedPreProcessor
         ExecutePreProcessor
+        SelectedXAxis
+        SelectedYAxis
+        DisablePlots
         PopoutActivePlot
+        AddDeleteTag
+        ClearDeleteTag
+        DeleteEntity
         SelectedCell
         SelectedFilter
         DoRefreshFilterTable
@@ -26,9 +31,6 @@ classdef DataCuratorView < appbox.View
         RemoveParametersFromFilteredGroup
         ChangedParameterProperties
         SendEntityToWorkspace
-        AddDeleteTag
-        ClearDeleteTag
-        DeleteEntity
     end
     
     properties (Access = private)
@@ -51,6 +53,8 @@ classdef DataCuratorView < appbox.View
         availablePlots
         tabPanel
         plotCard
+        xPlotField
+        yPlotField
         disablePlotsCheckBox
         tagToDelete
         undoTagToDelete
@@ -229,12 +233,40 @@ classdef DataCuratorView < appbox.View
                 'Parent', signalDetailLayout, ...
                 'Spacing', 5);
             uix.Empty('Parent', signalDetailControlLayout);
+            
+            Label( ...
+                'Parent', signalDetailControlLayout, ...
+                'String', 'X axis');
+            obj.xPlotField = MappedPopupMenu( ...
+               'Parent', signalDetailControlLayout, ...
+               'String', {' '}, ...
+               'HorizontalAlignment', 'left', ...
+               'Enable', 'off', ...
+               'Callback', @(h,d)notify(obj, 'SelectedXAxis'));
+           Label( ...
+               'Parent', signalDetailControlLayout, ...
+               'String', 'Y axis');
+            obj.yPlotField =  MappedPopupMenu( ...
+               'Parent', signalDetailControlLayout, ...
+               'String', {' '}, ...
+               'HorizontalAlignment', 'left', ...
+               'Enable', 'off', ...
+               'Callback', @(h,d)notify(obj, 'SelectedYAxis'));
             obj.disablePlotsCheckBox = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
                 'Style', 'checkbox', ...
                 'String', 'Disable Plots', ...
                 'Enable', 'on',...
                 'Callback', @(h,d)notify(obj, 'DisablePlots'));
+            obj.popoutPlot = uicontrol( ...
+                'Parent', signalDetailControlLayout, ...
+                'Style', 'pushbutton', ...
+                'String', 'Open Plot In New Figure', ...
+                'Enable', 'on', ...
+                'Callback', @(h,d)notify(obj, 'PopoutActivePlot'));
+            Label( ...
+                'Parent', signalDetailControlLayout, ...
+                'String', ' | ');
             obj.tagToDelete = uicontrol( ...
                 'Parent', signalDetailControlLayout, ...
                 'Style', 'pushbutton', ...
@@ -253,14 +285,8 @@ classdef DataCuratorView < appbox.View
                 'String', 'Delete Tagged', ...
                 'Enable', 'on', ...
                 'Callback', @(h,d)notify(obj, 'DeleteEntity'));
-            obj.popoutPlot = uicontrol( ...
-                'Parent', signalDetailControlLayout, ...
-                'Style', 'pushbutton', ...
-                'String', 'Open Plot In New Figure', ...
-                'Enable', 'on', ...
-                'Callback', @(h,d)notify(obj, 'PopoutActivePlot'));
-            uix.Empty('Parent', signalDetailControlLayout);
-            set(signalDetailControlLayout, 'Widths', [20 100 100 100 100 160 -2]);
+ 
+            set(signalDetailControlLayout, 'Widths', [20 40 100 40 100 90 160 10 100 100 100]);
             
             set(signalDetailLayout, 'Heights', [-1 30]);
             set(signalLayout, 'Widths', [-1.2 -7]);
@@ -462,6 +488,31 @@ classdef DataCuratorView < appbox.View
         
         function setPlotPannelTitles(obj, names)
             obj.tabPanel.TabTitles = names;
+        end
+        
+        function setXAxisValues(obj, values)
+            set(obj.xPlotField, 'String', values);
+        end
+        
+        function value = getXAxisValue(obj)
+            names = get(obj.xPlotField, 'String');
+            index = get(obj.xPlotField, 'Value');
+            value = names{index};
+        end
+        
+        function setYAxisValues(obj, values)
+            set(obj.yPlotField, 'String', values);
+        end
+        
+        function value = getYAxisValue(obj)
+            names = get(obj.yPlotField, 'String');
+            index = get(obj.yPlotField, 'Value');
+            value = names{index};
+        end
+        
+        function disableXYAxis(obj, tf)
+            set(obj.xPlotField, 'Enable', appbox.onOff(~tf));
+            set(obj.yPlotField, 'Enable',  appbox.onOff(~tf));
         end
         
         function disablePlotPannel(obj, tf)

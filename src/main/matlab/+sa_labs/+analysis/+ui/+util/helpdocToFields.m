@@ -8,20 +8,8 @@ for name = each(functionNames)
         continue;
     end
     
-    [doc, ~] = help(which(name));
-    
-    if ~ isempty(doc)
-        parsedDoc = strsplit(doc, '---');
-        try
-            prameterYaml = parsedDoc{1};
-            structure = yaml.ReadYaml(prameterYaml, 0, 0, 1);
-            currentUIFields = uiextras.jide.PropertyGridField.GenerateFromStruct(flattenStructure(structure));
-        catch exception
-            disp(getReport(exception, 'extended', 'hyperlinks', 'on'));
-            continue;
-        end
-    end
-    
+    [structure, flattenedStructure] = sa_labs.analysis.ui.util.helpDocToStructure(name);
+    currentUIFields = uiextras.jide.PropertyGridField.GenerateFromStruct(flattenedStructure);
     for uiField = each(currentUIFields)
         nameWithPackage = strsplit(name, '.');
         functionName = nameWithPackage{end};
@@ -33,17 +21,7 @@ for name = each(functionNames)
 end
 
 if isempty(uiFields)
-     uiFields = uiextras.jide.PropertyGridField.empty(0,1);
+    uiFields = uiextras.jide.PropertyGridField.empty(0,1);
 end
 
 end
-
-function s = flattenStructure(structure)
-structFields = setdiff(fields(structure), 'description');
-s = struct();
-for field = each(structFields)
-    value = structure.(field).default;
-    s.(field) = value;
-end
-end
-

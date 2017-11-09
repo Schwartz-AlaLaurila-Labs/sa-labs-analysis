@@ -70,6 +70,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
             obj.addListener(v, 'ExecutePreProcessor', @obj.onViewExecutePreProcessor);
+            obj.addListener(v, 'SelectedXAxis', @obj.onViewSelectedXAxis);
+            obj.addListener(v, 'SelectedYAxis', @obj.onViewSelectedYAxis);
             obj.addListener(v, 'DisablePlots', @obj.onViewDisabledPlots);
             obj.addListener(v, 'AddDeleteTag', @obj.onViewAddDeleteTag);
             obj.addListener(v, 'ClearDeleteTag', @obj.onViewClearDeleteTag);
@@ -98,6 +100,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             obj.view.setAvailablePlots(plots, functionNames);
             obj.view.disablePlotPannel(true);
+            obj.view.disableXYAxis(true);
         end
         
         function populateAvailablePreProcessors(obj)
@@ -288,6 +291,30 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.plotEntityMap(entitiyMap);
         end
         
+        function setPlotXYAxis(obj)
+            plot = obj.view.getActivePlot();
+            [~, parameter] = sa_labs.analysis.ui.util.helpDocToStructure(plot);
+            epochData = obj.getSelectedEpoch();
+            inValid = isempty(epochData);
+            
+            if  ~ inValid
+                xAxis = getValue(parameter.xAxis);
+                yAxis = getValue(parameter.yAxis);
+                obj.view.setXAxisValues(xAxis);
+                obj.view.setYAxisValues(yAxis);
+            end
+            obj.view.disableXYAxis(inValid || obj.view.hasPlotsDisabled());
+             
+            function value = getValue(value)
+                if sa_labs.analysis.ui.util.isFunctionHandle(value)
+                    func = str2func(value);
+                    value = func(epochData(1));
+                else
+                    value = strtrim(strsplit(value, ','));
+                end
+            end
+        end
+        
         function updatePlotPanel(obj)
             selectedPlots = obj.view.getSelectedPlots();
             obj.view.addPlotToPanelTab(selectedPlots);
@@ -299,7 +326,18 @@ classdef DataCuratorPresenter < appbox.Presenter
                 parsedName = strsplit(plot, '.');
                 titles{end +1} = parsedName{end}; %#ok
             end
-            obj.view.setPlotPannelTitles(titles)
+            obj.view.setPlotPannelTitles(titles);
+            obj.setPlotXYAxis();
+        end
+        
+        function onViewSelectedXAxis(obj, ~, ~)
+            entitiyMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entitiyMap);
+        end
+        
+        function onViewSelectedYAxis(obj, ~, ~)
+            entitiyMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entitiyMap);
         end
         
         function onViewSelectedPopOutPlot(obj, ~, ~)
@@ -569,6 +607,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 end
                 
                 if ~ obj.view.hasPlotsDisabled()
+                    obj.setPlotXYAxis();
                     obj.plotEntityMap(entitiyMap);
                 end
             catch exception
@@ -667,10 +706,13 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
 
             import uiextras.jide.*;
+            import sa_labs.analysis.ui.util.*;
+            
             functionNames = obj.view.getSelectedPreProcessorFunction();
-            defaultFields = sa_labs.analysis.ui.util.helpdocToFields(functionNames);
             fields = obj.view.getPreProcessorParameterPropertyGrid();
             devices = obj.view.getSelectedDevices();
+            
+            defaultFields = helpdocToFields(functionNames);
             
             for i = 1 : numel(defaultFields)
                 
@@ -693,33 +735,33 @@ classdef DataCuratorPresenter < appbox.Presenter
                 end
             end
             obj.view.setPreProcessorParameters(defaultFields);
-            
-            function tf = isFunctionHandle(value)
-                tf = ischar(value) && ~ isempty((strfind(value, '@')) == 1);
-            end
         end
         
         function plotEntityMap(obj, entitiyMap, axes)
             
             entities = obj.getSelectedEpoch(entitiyMap);
+            plot = obj.view.getActivePlot();
+            devices = obj.view.getSelectedDevices();
+
             if isempty(entities)
                 return
             end
-            
-            plot = obj.view.getActivePlot();
-            if nargin < 3
-                axes = obj.view.getAxes(plot);
-            end
-            entities = obj.getSelectedEpoch(entitiyMap);
-            devices = obj.view.getSelectedDevices();
             
             if isempty(devices)
                 obj.view.showMessage('Device is empty. Click on cell level to select the amplifier');
                 return;
             end
             
-            functionDelegate = str2func(strcat('@(data, devices, axes) ', plot, '(data, devices, axes)'));
-            functionDelegate(entities, devices, axes);
+            if nargin < 3
+                axes = obj.view.getAxes(plot);
+            end            
+            parameter = struct();
+            parameter.devices = devices;
+            parameter.xAxis = obj.view.getXAxisValue();
+            parameter.yAxis = obj.view.getYAxisValue();
+            
+            functionDelegate = str2func(strcat('@(data, parameter, axes) ', plot, '(data, parameter, axes)'));
+            functionDelegate(entities, parameter, axes);
         end
         
         function updateStateOfControls(obj)
@@ -820,7 +862,5 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             obj.populateEntityTree(updatedCellDatas);
         end
-    
-        
     end
 end
