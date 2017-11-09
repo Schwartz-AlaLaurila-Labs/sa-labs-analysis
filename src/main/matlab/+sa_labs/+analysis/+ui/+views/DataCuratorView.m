@@ -455,8 +455,10 @@ classdef DataCuratorView < appbox.View
             plots = setdiff(allPlots, selectedPlots);
         end
         
-        function addPlotToPanelTab(obj, plots)
-            for plot = each(plots)
+        function addPlotToPanelTab(obj, plots, titles)
+            
+            for i = 1 : numel(plots)
+                plot = plots{i};
                 plotField = obj.getValidPlotField(plot);
                 
                 if ~ isfield(obj.plotCard, plotField)
@@ -469,6 +471,7 @@ classdef DataCuratorView < appbox.View
                         'Parent', newplotCard.panel);
                     set(newplotCard.axes, 'YColor', 'black');
                     obj.plotCard.(plotField) = newplotCard;
+                    obj.tabPanel.TabTitles{end} = titles{i};
                 end
             end
         end
@@ -485,13 +488,10 @@ classdef DataCuratorView < appbox.View
                 end
             end
         end
-        
-        function setPlotPannelTitles(obj, names)
-            obj.tabPanel.TabTitles = names;
-        end
-        
+                
         function setXAxisValues(obj, values)
             set(obj.xPlotField, 'String', values);
+            set(obj.xPlotField, 'Value', 1);
         end
         
         function value = getXAxisValue(obj)
@@ -502,6 +502,7 @@ classdef DataCuratorView < appbox.View
         
         function setYAxisValues(obj, values)
             set(obj.yPlotField, 'String', values);
+            set(obj.yPlotField, 'Value', 1);
         end
         
         function value = getYAxisValue(obj)
@@ -526,8 +527,12 @@ classdef DataCuratorView < appbox.View
         
         function plot = getActivePlot(obj)
             plots = get(obj.availablePlots, 'Value');
+            titles = get(obj.tabPanel, 'TabTitles');
             index = get(obj.tabPanel, 'Selection');
-            plot = plots{index};
+            selectedTitle = titles{index};
+            
+            indices = cellfun(@(plot) any(strfind(plot, selectedTitle)), plots);
+            plot = plots{indices};
         end
         
         function setAvailablePreProcessorFunctions(obj, names, values)

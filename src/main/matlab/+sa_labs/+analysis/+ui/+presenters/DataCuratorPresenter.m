@@ -317,16 +317,14 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function updatePlotPanel(obj)
             selectedPlots = obj.view.getSelectedPlots();
-            obj.view.addPlotToPanelTab(selectedPlots);
             unSelectedplots = obj.view.getUnSelectedPlots();
-            obj.view.removePlotFromPanelTab(unSelectedplots);
-            
             titles = {};
             for plot = each(selectedPlots)
                 parsedName = strsplit(plot, '.');
                 titles{end +1} = parsedName{end}; %#ok
             end
-            obj.view.setPlotPannelTitles(titles);
+            obj.view.addPlotToPanelTab(selectedPlots, titles);
+            obj.view.removePlotFromPanelTab(unSelectedplots);
             obj.setPlotXYAxis();
         end
         
@@ -349,6 +347,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function onViewSelectedPlotFromPanel(obj, ~, ~)
             entityMap = obj.getSelectedEntityMap();
+            obj.setPlotXYAxis();
             obj.plotEntityMap(entityMap);
         end
         
@@ -378,6 +377,7 @@ classdef DataCuratorPresenter < appbox.Presenter
         
         function onViewDisabledPlots(obj, ~, ~)
             disabled = obj.view.hasPlotsDisabled();
+            obj.view.disableXYAxis(disabled);
             obj.view.disablePlotPannel(disabled);
             if ~ disabled
                 entitiyMap = obj.getSelectedEntityMap();
