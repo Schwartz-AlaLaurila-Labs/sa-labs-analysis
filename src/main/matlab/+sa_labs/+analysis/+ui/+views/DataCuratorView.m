@@ -491,7 +491,6 @@ classdef DataCuratorView < appbox.View
                 
         function setXAxisValues(obj, values)
             set(obj.xPlotField, 'String', values);
-            set(obj.xPlotField, 'Value', 1);
         end
         
         function value = getXAxisValue(obj)
@@ -502,7 +501,6 @@ classdef DataCuratorView < appbox.View
         
         function setYAxisValues(obj, values)
             set(obj.yPlotField, 'String', values);
-            set(obj.yPlotField, 'Value', 1);
         end
         
         function value = getYAxisValue(obj)
@@ -515,7 +513,7 @@ classdef DataCuratorView < appbox.View
             set(obj.xPlotField, 'Enable', appbox.onOff(~tf));
             set(obj.yPlotField, 'Enable',  appbox.onOff(~tf));
         end
-        
+
         function disablePlotPannel(obj, tf)
             set(obj.tabPanel, 'Visible', appbox.onOff(~tf)); 
         end

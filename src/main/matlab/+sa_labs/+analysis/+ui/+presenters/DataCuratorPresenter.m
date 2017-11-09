@@ -292,12 +292,13 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function setPlotXYAxis(obj)
-            plot = obj.view.getActivePlot();
-            [~, parameter] = sa_labs.analysis.ui.util.helpDocToStructure(plot);
+            
             epochData = obj.getSelectedEpoch();
             inValid = isempty(epochData);
             
             if  ~ inValid
+                plot = obj.view.getActivePlot();
+                [~, parameter] = sa_labs.analysis.ui.util.helpDocToStructure(plot);
                 xAxis = getValue(parameter.xAxis);
                 yAxis = getValue(parameter.yAxis);
                 obj.view.setXAxisValues(xAxis);
@@ -601,18 +602,19 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function processSelectedEntity(obj, entitiyMap)
+            
             try
                 if obj.view.hasValidPreProcessorSelected()
                     obj.preProcessEntityMap(entitiyMap);
                 end
-                
-                if ~ obj.view.hasPlotsDisabled()
-                    obj.setPlotXYAxis();
-                    obj.plotEntityMap(entitiyMap);
-                end
             catch exception
                 disp(exception.getReport);
                 obj.view.showError(exception.message);
+            end
+            
+            if ~ obj.view.hasPlotsDisabled()
+                obj.setPlotXYAxis();
+                obj.plotEntityMap(entitiyMap);
             end
             obj.populateDetailsForEntityMap(entitiyMap);
         end
@@ -759,9 +761,14 @@ classdef DataCuratorPresenter < appbox.Presenter
             parameter.devices = devices;
             parameter.xAxis = obj.view.getXAxisValue();
             parameter.yAxis = obj.view.getYAxisValue();
-            
             functionDelegate = str2func(strcat('@(data, parameter, axes) ', plot, '(data, parameter, axes)'));
-            functionDelegate(entities, parameter, axes);
+            
+            try
+                functionDelegate(entities, parameter, axes);
+            catch exception
+                disp(exception.getReport);
+                obj.view.showError(exception.message);
+            end
         end
         
         function updateStateOfControls(obj)
