@@ -1,9 +1,5 @@
 ctx = struct();
 
-ctx.fileRepository.class = 'sa_labs.analysis.app.FileRepository';
-% ctx.fileRepository.analysisFolder = 'R:\ala-laurila_lab\users\narayas2';
-% ctx.fileRepository.rawDataFolder = 'R:\ala-laurila_lab\data\takeshd1\rawdata';
-
 ctx.analysisDao.class = 'sa_labs.analysis.dao.AnalysisFolderDao';
 ctx.analysisDao.repository = 'fileRepository';
 
@@ -17,3 +13,5 @@ ctx.offlineAnalaysisManager.class = 'sa_labs.analysis.app.OfflineAnalaysisManage
 ctx.offlineAnalaysisManager.analysisDao = 'analysisDao';
 ctx.offlineAnalaysisManager.parserFactory = 'parserFactory';
 ctx.offlineAnalaysisManager.analysisFactory = 'analysisFactory';
+
+ctx.fileRepositorySettings = sa_labs.analysis.ui.settings.FileRepositorySettings();
