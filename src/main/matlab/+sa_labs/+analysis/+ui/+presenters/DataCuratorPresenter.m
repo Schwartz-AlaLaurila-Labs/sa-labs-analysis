@@ -304,7 +304,7 @@ classdef DataCuratorPresenter < appbox.Presenter
                 obj.view.setXAxisValues(xAxis);
                 obj.view.setYAxisValues(yAxis);
             end
-            obj.view.disableXYAxis(inValid || obj.view.hasPlotsDisabled());
+            obj.view.disableXYAxis(inValid);
              
             function value = getValue(value)
                 if sa_labs.analysis.ui.util.isFunctionHandle(value)
