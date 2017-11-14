@@ -742,13 +742,12 @@ classdef DataCuratorPresenter < appbox.Presenter
         function plotEntityMap(obj, entitiyMap, axes)
             
             entities = obj.getSelectedEpoch(entitiyMap);
-            plot = obj.view.getActivePlot();
-            devices = obj.view.getSelectedDevices();
-
             if isempty(entities)
                 return
             end
-            
+            plot = obj.view.getActivePlot();
+            devices = obj.view.getSelectedDevices();
+
             if isempty(devices)
                 obj.view.showMessage('Device is empty. Click on cell level to select the amplifier');
                 return;
