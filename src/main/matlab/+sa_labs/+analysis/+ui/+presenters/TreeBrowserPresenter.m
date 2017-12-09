@@ -1,30 +1,27 @@
-classdef AnalayserPresenter < appbox.Presenter
+classdef TreeBrowserPresenter < appbox.Presenter
     
     properties
-        viewSelectedCloseFcn
+        analysisManager
+        fileRepository
     end
     
     properties (Access = private)
         log
         settings
-        dataService
-        featureManager
         uuidToNode
     end
     
     methods
         
-        function obj = AnalaysisManagerPresenter(analysisManager, view)
+        function obj = TreeBrowserPresenter(analysisManager, fileRepository, view)
             if nargin < 4
-                view = sa_labs.analysis.ui.AnalaysisManagerView();
+                view = sa_labs.analysis.ui.TreeBrowserView();
             end
             obj = obj@appbox.Presenter(view);
             
-            obj.log = log4m.LogManager.getLogger(class(obj));
-            obj.settings = sa_labs.analysis.AnalysisManagerSettings();
-            obj.dataService = analysisManager.dataService;
-            featureManager = analysisManager.getFeatureManager();
-            obj.detailedEntitySet = symphonyui.core.persistent.collections.EntitySet();
+            obj.log = logging.getLogger(app.Constants.ANALYSIS_LOGGER);
+            obj.settings = sa_labs.analysis.TreeBrowserSettings();
+            obj.fileRepository = fileRepository;
             obj.uuidToNode = containers.Map();
         end
         
@@ -33,21 +30,20 @@ classdef AnalayserPresenter < appbox.Presenter
     methods (Access = protected)
         
         function willGo(obj)
-            obj.populateEntityTree();
+            obj.populateAvailablePlots();
             try
                 obj.loadSettings();
             catch x
-                obj.log.debug(['Failed to load presenter settings: ' x.message], x);
+                obj.log.debug(['Failed to load presenter settings: ' x.message]);
             end
             obj.updateStateOfControls();
         end
         
         function willStop(obj)
-            obj.viewSelectedCloseFcn = [];
             try
                 obj.saveSettings();
             catch x
-                obj.log.debug(['Failed to save presenter settings: ' x.message], x);
+                obj.log.debug(['Failed to save presenter settings: ' x.message]);
             end
         end
         
