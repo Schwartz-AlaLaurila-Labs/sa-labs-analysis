@@ -4,7 +4,7 @@ classdef EntityNodeType
         EXPERIMENT
         CELLS
         EPOCH
-        ANALYSIS_RESULTS
+        ANALYSIS_PROJECT
         ANALYSIS_GROUPS
         ANALYSIS
         EPOCH_GROUP
@@ -23,8 +23,8 @@ classdef EntityNodeType
                     c = 'Cell';
                 case EntityNodeType.EPOCH
                     c = 'Epoch';
-                case EntityNodeType.ANALYSIS_RESULTS
-                    c = 'Analysis Results';    
+                case EntityNodeType.ANALYSIS_PROJECT
+                    c = 'Analysis Project';    
                 case EntityNodeType.ANALYSIS_GROUPS
                     c = 'Analysis Groups';
                 case EntityNodeType.ANALYSIS
@@ -50,8 +50,8 @@ classdef EntityNodeType
             tf = obj == sa_labs.analysis.ui.views.EntityNodeType.EPOCH;
         end
 
-        function tf = isAnalysisResults(obj)
-            tf = obj == sa_labs.analysis.ui.views.EntityNodeType.ANALYSIS_RESULTS;
+        function tf = isAnalysisProject(obj)
+            tf = obj == sa_labs.analysis.ui.views.EntityNodeType.ANALYSIS_PROJECT;
         end
 
         function tf = isAnalysisGroups(obj)

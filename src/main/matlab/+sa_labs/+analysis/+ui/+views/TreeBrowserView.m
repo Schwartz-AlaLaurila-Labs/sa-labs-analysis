@@ -18,7 +18,7 @@ classdef TreeBrowserView < appbox.View
     
     properties (Access = private)
         browserMenu
-        analysisTree
+        analysisProjectTree
         analysisGroupNode
         availablePlots
         parameterPropertyGrid
@@ -60,16 +60,16 @@ classdef TreeBrowserView < appbox.View
             analysisTreeLayout = uix.VBox( ...
                 'Parent', analysisTreeAndPlotControlsLayout, ...
                 'Spacing', 5);
-            obj.analysisTree = uiextras.jTree.Tree( ...
+            obj.analysisProjectTree= uiextras.jTree.Tree( ...
                 'Parent', analysisTreeLayout, ...
                 'FontName', get(obj.figureHandle, 'DefaultUicontrolFontName'), ...
                 'FontSize', get(obj.figureHandle, 'DefaultUicontrolFontSize'), ...
                 'BorderType', 'none', ...
                 'SelectionChangeFcn', @(h,d)notify(obj, 'SelectedNodes'), ...
                 'SelectionType', 'discontiguous');
-            root = obj.analysisTree.Root;
-            set(root, 'Value', struct('entity', [], 'type', EntityNodeType.ANALYSIS_RESULTS));
-            set(root, 'Name', 'Result');
+            root = obj.analysisProjectTree.Root;
+            set(root, 'Value', struct('entity', [], 'type', EntityNodeType.ANALYSIS_PROJECT));
+            set(root, 'Name', 'Analysis Project');
             analysisGroups = uiextras.jTree.TreeNode( ...
                 'Parent', root, ...
                 'Name', 'Analysis', ...
@@ -171,8 +171,20 @@ classdef TreeBrowserView < appbox.View
         
         % Add / remove tree nodes
         
-        function n = addAnalysisNode(obj, parent, name, entity)
+        function n = setAnalysisProjectNode(obj, name, entity)
             value.entity = entity;
+            value.type = sa_labs.analysis.ui.EntityNodeType.ANALYSIS_PROJECT;
+            set(obj.analysisProjectTree, 'Name', name);
+            set(obj.analysisProjectTree, 'Value', value);
+            n = obj.analysisProjectTree;
+        end
+
+        function project = getAnalysisProject(obj)
+            project = obj.getNodeEntity(obj.analysisProjectTree);    
+        end
+
+        function n = addAnalysisNode(obj, parent, name)
+            value.entity = [];
             value.type = sa_labs.analysis.ui.EntityNodeType.ANALYSIS;
             n = uiextras.jTree.TreeNode( ...
                 'Parent', parent, ...
@@ -219,8 +231,8 @@ classdef TreeBrowserView < appbox.View
             set(n, 'UIContextMenu', menu);
         end
         
-        function n = addFeatureNode(obj, parent, name, entity)
-            value.entity = entity;
+        function n = addFeatureNode(obj, parent, name)
+            value.entity = [];
             value.type = sa_labs.analysis.ui.EntityNodeType.FEATURE;
             n = uiextras.jTree.TreeNode( ...
                 'Parent', parent, ...
