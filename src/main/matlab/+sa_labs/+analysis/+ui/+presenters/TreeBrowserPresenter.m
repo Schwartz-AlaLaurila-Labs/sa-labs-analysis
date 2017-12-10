@@ -20,13 +20,16 @@ classdef TreeBrowserPresenter < appbox.Presenter
     methods
         
         function obj = TreeBrowserPresenter(projectName, analysisManager, fileRepository, view)
+            import  sa_labs.analysis.*;
             if nargin < 4
-                view = sa_labs.analysis.ui.TreeBrowserView();
+                view = ui.views.TreeBrowserView();
             end
+            
             obj = obj@appbox.Presenter(view);
             obj.analysisprojectName = projectName;
+            obj.analysisManager = analysisManager;
             obj.log = logging.getLogger(app.Constants.ANALYSIS_LOGGER);
-            obj.settings = sa_labs.analysis.ui.settings.TreeBrowserSettings();
+            obj.settings = ui.settings.TreeBrowserSettings();
             obj.fileRepository = fileRepository;
             obj.uuidToNode = containers.Map();
         end
@@ -69,40 +72,47 @@ classdef TreeBrowserPresenter < appbox.Presenter
             [finder, project] = obj.analysisManager.getFeatureFinder(obj.analysisprojectName);
             obj.featureTreeFinder = finder;
             root = obj.view.setAnalysisProjectNode(project.identifier, project);
-
+            
+            
             for analysisType = each(project.getUniqueAnalysisTypes())
                 analysisNode = obj.view.addAnalysisNode(root, analysisType);
 
-                for cellName = each(project.getCellNames(analysisType));
+                for cellName = each(project.getCellNames(analysisType))
                     cellData = project.getCellData(cellName);
                     n = obj.view.addCellsNode(analysisNode, cellName, cellData);
-                    obj.uuidToNode(cellData.uuid) = n
-                    
                     groupName = project.getAnalysisResultName(analysisType, cellName);
-                    obj.addEpochGroups(groupName, n);
+                    obj.addEpochGroup(groupName, n);
                 end
             end
         end
 
-        function addEpochGroups(obj, groupName, parentNode, parentGroupName)
-            
+        function addEpochGroup(obj, groupName, parentNode, parentGroupName)
+            isNodeCreated = false;
             if nargin < 4
                 parentGroupName = [];
+                isNodeCreated = true;
             end
-            epochGroups = obj.featureTreeFinder.find(groupName, 'hasParent', parentGroupName).toArray();
-
-            for epochGroup = each(epochGroups)
-                n = obj.view.addEpochGroupNode(parentNode, epochGroup);
-                obj.uuidToNode(epochGroup.uuid) = n;
-                obj.addFeatures(epochGroup);
-                obj.addEpochGroups(epochGroup.name, n, groupName);
+            
+            finder = obj.featureTreeFinder;
+            epochGroup = finder.find(groupName, 'hasParent', parentGroupName).toArray();
+            % create node only for epoch groups
+            if ~ isNodeCreated
+                n = obj.view.addEpochGroupNode(parentNode, epochGroup.name, epochGroup);
+            else
+                n = parentNode;
+            end
+            obj.uuidToNode(epochGroup.uuid) = n;
+            obj.addFeatures(epochGroup);            
+            
+            for childEpochGroup = each(finder.getChildEpochGroups(epochGroup))
+                obj.addEpochGroup(childEpochGroup.name, n, epochGroup.name);
             end
         end
 
         function addFeatures(obj, epochGroup)
             parent = obj.uuidToNode(epochGroup.uuid);
             
-            for key = each(obj.epochGroup.getFeatureKey());
+            for key = each(epochGroup.getFeatureKey())
                 obj.view.addFeatureNode(parent, key);
             end
         end
