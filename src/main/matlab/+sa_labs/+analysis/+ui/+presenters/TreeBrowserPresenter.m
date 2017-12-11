@@ -41,6 +41,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function willGo(obj)
             obj.initalizeAnalysisProject();
             obj.populateAvailablePlots();
+            obj.updatePlotPanel();
             try
                 obj.loadSettings();
             catch x
@@ -63,6 +64,11 @@ classdef TreeBrowserPresenter < appbox.Presenter
             v = obj.view;
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'AddAnalysisTree', @obj.onViewAddAnalysisTree);
+            obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
+            obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
+            obj.addListener(v, 'SelectedXAxis', @obj.onViewSelectedXAxis);
+            obj.addListener(v, 'SelectedYAxis', @obj.onViewSelectedYAxis);
+            obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);            
         end
     end
     
@@ -126,14 +132,174 @@ classdef TreeBrowserPresenter < appbox.Presenter
             obj.view.setAvailablePlots(plots, functionNames);
         end
 
+        function updatePlotPanel(obj)
+            selectedPlots = obj.view.getSelectedPlots();
+            
+            if isempty(selectedPlots)
+                return;
+            end
+            unSelectedplots = obj.view.getUnSelectedPlots();
+            titles = {};
+            for plot = each(selectedPlots)
+                parsedName = strsplit(plot, '.');
+                titles{end +1} = parsedName{end}; %#ok
+            end
+            obj.view.addPlotToPanelTab(selectedPlots, titles);
+            obj.view.removePlotFromPanelTab(unSelectedplots);
+            obj.setPlotXYAxis();
+        end
+
+        function setPlotXYAxis(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            plot = v.getActivePlot();
+            inValid = isempty(nodes) || isempty(plot);
+
+            if  ~ inValid
+                [~, parameter] = sa_labs.analysis.ui.util.helpDocToStructure(plot);
+                entity = v.getNodeEntity(nodes(1));
+                xAxis = getValue(parameter.xAxis);
+                yAxis = getValue(parameter.yAxis);
+                v.setXAxisValues(xAxis);
+                v.setYAxisValues(yAxis);
+            end
+            v.disableXYAxis(inValid);
+             
+            function value = getValue(value)
+                if sa_labs.analysis.ui.util.isFunctionHandle(value)
+                    func = str2func(value);
+                    value = func(entity);
+                else
+                    value = strtrim(strsplit(value, ','));
+                end
+            end
+        end
+
+        function onViewSelectedNodes(obj, ~, ~)
+            import sa_labs.analysis.ui.views.EntityNodeType;
+
+            nodes = obj.view.getSelectedNodes();
+            [isSameType, type] = obj.isNodeOfSameType(nodes);    
+            
+            if ~ isSameType
+                return;
+            end
+
+            switch type
+                case EntityNodeType.EPOCH_GROUP
+                   obj.updateEpochGroupParameter();
+                   obj.setPlotXYAxis();
+                case EntityNodeType.ANALYSIS_PROJECT
+                   obj.updateProjectParameters();
+                case EntityNodeType.CELLS
+                    obj.viewCellParameters();
+            end
+            obj.plotSelectedNodes();
+        end
+        
+        function updateEpochGroupParameter(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            
+            if numel(nodes) > 1
+                return;
+            end
+            epochGroup = v.getNodeEntity(nodes(1));
+            fields = obj.convertMapToPropertyGridFields(epochGroup.attributes);
+            v.setParameterPropertyGrid(fields);
+            v.enabledEditParameters(false);
+            v.enableAddAndDeleteParameter(true);
+        end
+
+        function updateProjectParameters(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            analysisProject = v.getNodeEntity(nodes(1));
+            fields = uiextras.jide.PropertyGridField.GenerateFromClass(analysisProject);
+            v.setParameterPropertyGrid(fields);
+            v.enabledEditParameters(true);
+            v.enableAddAndDeleteParameter(false);
+        end
+
+        function viewCellParameters(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            cellData = v.getNodeEntity(nodes(1));
+            fields = obj.convertMapToPropertyGridFields(cellData.attributes);
+            v.setParameterPropertyGrid(fields);
+            v.enabledEditParameters(false);
+            v.enableAddAndDeleteParameter(false);
+        end
+
         function onViewAddAnalysisTree(obj, ~, ~)
             analysisFolder = obj.fileRepository.analysisFolder;
             files = obj.view.showGetFile('Select Analysis Trees', '*.mat', analysisFolder);
             warning('Not implemented !');
         end
 
-        function updateStateOfControls(obj)
+
+        function onViewSelectedPlots(obj, ~, ~)
+            obj.updatePlotPanel();
+            obj.plotSelectedNodes();
+        end
+
+        function plotSelectedNodes(obj, axes)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            [isSameType, type] = obj.isNodeOfSameType(nodes);    
+            plot = v.getActivePlot();
+
+            if ~ isSameType || isempty(plot) || isempty(nodes) 
+                return;
+            end
+
+            if nargin < 2
+                axes = v.getAxes(plot);
+            end
+
+            if type.isEpochGroup()
+                obj.plotEpochGroups(axes);
+            end
+        end
+
+        function plotEpochGroups(obj, axes)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            plot = v.getActivePlot();
+
+            parameter = struct();
+            parameter.xAxis = v.getXAxisValue();
+            parameter.yAxis = v.getYAxisValue();
+            functionDelegate = str2func(strcat('@(epochGroups, parameter, axes) ', plot, '(epochGroups, parameter, axes)'));
             
+            try
+                epochGroups =  linq(nodes).select(@(n) v.getNodeEntity(n)).toArray();
+                functionDelegate(epochGroups, parameter, axes);
+            catch exception
+                disp(exception.getReport);
+                v.showError(exception.message);
+            end
+        end
+        
+        function onViewSelectedPlotFromPanel(obj, ~, ~)
+            obj.plotSelectedNodes();
+        end
+
+        function onViewSelectedXAxis(obj, ~, ~)
+            obj.plotSelectedNodes();
+        end
+        
+        function onViewSelectedYAxis(obj, ~, ~)
+            obj.plotSelectedNodes();
+        end
+        
+        function onViewSelectedPopOutPlot(obj, ~, ~)
+            f = figure();
+            ax = axes('Parent', f);
+            obj.plotSelectedNodes(ax);
+        end
+        
+        function updateStateOfControls(obj)
         end
         
         function loadSettings(obj)
@@ -146,5 +312,22 @@ classdef TreeBrowserPresenter < appbox.Presenter
             obj.settings.viewPosition = obj.view.position;
             obj.settings.save();
         end        
+    end
+
+    methods (Access = private)
+        
+        function fields = convertMapToPropertyGridFields(~, map)
+            values = map.values;
+            invalidIndex = cellfun(@(v) iscell(v) && ~ iscellstr(v), values);
+            keySet = map.keys;
+            map = remove(map, keySet(invalidIndex));
+            fields = uiextras.jide.PropertyGridField.GenerateFromMap(map);
+        end
+
+        function [tf, type] = isNodeOfSameType(obj, nodes)
+            types = linq(nodes).select(@(node) obj.view.getNodeType(node)).toArray();
+            tf = numel(unique(cellstr(types))) == 1;
+            type = types(1);
+        end
     end
 end

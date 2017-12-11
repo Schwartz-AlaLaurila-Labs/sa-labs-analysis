@@ -25,6 +25,7 @@ classdef TreeBrowserView < appbox.View
         addParameterButton
         removeParameterButton
         tabPanel
+        plotCard
         xPlotField
         yPlotField
         popoutPlot
@@ -86,7 +87,7 @@ classdef TreeBrowserView < appbox.View
                 'Parent', plotControlsLayout, ...
                 'Max', 5, ...
                 'Min', 1, ...
-                'Enable', 'off', ...
+                'Enable', 'on', ...
                 'Callback', @(h,d)notify(obj, 'SelectedPlots'));
             set(plotControlsLayout, 'Heights', [20 -1]);
             set(analysisTreeAndPlotControlsLayout, 'Widths', [-1 -1]);
@@ -247,11 +248,11 @@ classdef TreeBrowserView < appbox.View
         % user operation for tree nodes
         
         function setSelectedNodes(obj, nodes)
-            obj.entityTree.SelectedNodes = nodes;
+            obj.analysisProjectTree.SelectedNodes = nodes;
         end
         
         function nodes = getSelectedNodes(obj)
-            nodes = obj.entityTree.SelectedNodes;
+            nodes = obj.analysisProjectTree.SelectedNodes;
         end
         
         function e = getNodeEntity(obj, node) %#ok<INUSL>
@@ -324,6 +325,14 @@ classdef TreeBrowserView < appbox.View
             set(obj.addParametersButton, 'Enable', appbox.onOff(tf));
             set(obj.removeParametersButton, 'Enable', appbox.onOff(tf));
         end
+
+        function enabledEditParameters(obj, tf)
+            style = 'readonly';
+            if tf
+                style = 'normal';
+            end
+            set(obj.parameterPropertyGrid, 'EditorStyle', style);
+        end
         
         % plot pannel methods
         
@@ -362,11 +371,15 @@ classdef TreeBrowserView < appbox.View
         end
         
         function plot = getActivePlot(obj)
+            plot = [];
+            index = get(obj.tabPanel, 'Selection');
+            if index == 0
+                return;
+            end
+
             plots = get(obj.availablePlots, 'Value');
             titles = get(obj.tabPanel, 'TabTitles');
-            index = get(obj.tabPanel, 'Selection');
             selectedTitle = titles{index};
-            
             indices = cellfun(@(plot) any(strfind(plot, selectedTitle)), plots);
             plot = plots{indices};
         end
