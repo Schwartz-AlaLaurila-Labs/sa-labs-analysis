@@ -8,23 +8,24 @@ ui_test.testCurator();
 %% Create the analysis project
 
 clear;
-[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis-deubug', 'experiments', {'101217Dc'}, 'override', false);
+[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis_01', 'experiments', {'101217Dc'}, 'override', false);
 % open the project file
 open(project.file)
 %% Create a simple search tree definition
 
-analysisPreset = struct();
-analysisPreset.type = 'listByProtocol';
-analysisPreset.buildTreeBy = {'displayName', 'intensity; probeAxis', 'devices'};
-analysisPreset.devices.splitValue = {'Amp1', 'Amp2'};
+analysisFilter = struct();
+analysisFilter.type = 'LightStepAnalysis';
+analysisFilter.buildTreeBy = {'displayName', 'intensity', 'stimTime'};
+analysisFilter.displayName.splitValue = {'Light Step'};
+analysisFilter.stimTime.featureExtractor = {@(a, g, p) sa_labs.analysis.common.extractors.psthExtractor(a, g, p)};
 
 % Build the tree based on the tree definition
 
-buildAnalysis('Example-Analysis-deubug', analysisPreset)
+buildAnalysis('Example-Analysis_01', analysisFilter)
 
 %% Create Finder for searching through tree
 
-finder = getFeatureFinder('Example-Analysis-deubug');
+finder = getFeatureFinder('Example-Analysis_01');
 finder.getStructure().tostring()
 
 %%
