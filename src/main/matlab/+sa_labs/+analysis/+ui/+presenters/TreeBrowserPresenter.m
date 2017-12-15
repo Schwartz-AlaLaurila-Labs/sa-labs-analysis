@@ -68,7 +68,10 @@ classdef TreeBrowserPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
             obj.addListener(v, 'SelectedXAxis', @obj.onViewSelectedXAxis);
             obj.addListener(v, 'SelectedYAxis', @obj.onViewSelectedYAxis);
-            obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);            
+            obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);  
+            obj.addListener(v, 'EnableFeatureIteration', @obj.onViewSelectedEnableFeatureIteration);
+            obj.addListener(v, 'GoToPreviousFeature', @obj.onViewSelectedGoToPreviosFeature);          
+            obj.addListener(v, 'GoToNextFeature', @obj.onViewSelectedGoToNextFeature);                      
         end
     end
     
@@ -119,7 +122,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
             parent = obj.uuidToNode(epochGroup.uuid);
             
             for key = each(epochGroup.getFeatureKey())
-                obj.view.addFeatureNode(parent, key);
+                obj.view.addFeatureNode(parent, key, epochGroup);
             end
         end
 
@@ -178,13 +181,14 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function onViewSelectedNodes(obj, ~, ~)
             import sa_labs.analysis.ui.views.EntityNodeType;
 
+            obj.view.enableFeatureIteration(false);
             nodes = obj.view.getSelectedNodes();
             [isSameType, type] = obj.isNodeOfSameType(nodes);    
             
             if ~ isSameType
                 return;
             end
-
+            
             switch type
                 case EntityNodeType.EPOCH_GROUP
                    obj.updateEpochGroupParameter();
@@ -193,6 +197,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
                    obj.updateProjectParameters();
                 case EntityNodeType.CELLS
                     obj.viewCellParameters();
+                case EntityNodeType.FEATURE
+                    obj.view.enableFeatureIteration(true);
+                    obj.updateFeatures();
             end
             obj.plotSelectedNodes();
         end
@@ -217,7 +224,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
             analysisProject = v.getNodeEntity(nodes(1));
             fields = uiextras.jide.PropertyGridField.GenerateFromClass(analysisProject);
             v.setParameterPropertyGrid(fields);
-            v.enabledEditParameters(true);
+            v.enabledEditParameters(false);
             v.enableAddAndDeleteParameter(false);
         end
 
@@ -229,6 +236,25 @@ classdef TreeBrowserPresenter < appbox.Presenter
             v.setParameterPropertyGrid(fields);
             v.enabledEditParameters(false);
             v.enableAddAndDeleteParameter(false);
+        end
+
+        function updateFeatures(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            epochGroup = v.getNodeEntity(nodes(1));
+            key = v.getNodeName(nodes(1));
+            feature = epochGroup.getFeatures(key);
+
+            if numel(nodes) > 1 || (~ v.canIterateFeature() && numel(feature) > 1)
+                return;
+            end
+            index = v.getCurrentFeatureIndex();
+            fields = obj.convertMapToPropertyGridFields(feature(index).description.toMap());
+            v.setParameterPropertyGrid(fields);
+            v.enabledEditParameters(false);
+            v.enableAddAndDeleteParameter(false);
+            
+            obj.updateFeatureIterationControls();
         end
 
         function onViewAddAnalysisTree(obj, ~, ~)
@@ -259,6 +285,8 @@ classdef TreeBrowserPresenter < appbox.Presenter
 
             if type.isEpochGroup()
                 obj.plotEpochGroups(axes);
+            elseif type.isFeature()
+                obj.plotFeature(axes);
             end
         end
 
@@ -280,7 +308,44 @@ classdef TreeBrowserPresenter < appbox.Presenter
                 v.showError(exception.message);
             end
         end
-        
+
+        function plotFeature(obj, axes)
+            v = obj.view;
+            plot = v.getActivePlot();
+            nodes = v.getSelectedNodes();
+
+            if ~ any(strfind(plot, 'Feature')) || numel(nodes) > 1
+                return
+            end
+            epochGroup = v.getNodeEntity(nodes);
+            key = v.getNodeName(nodes);
+            data = epochGroup.getFeatureData(key);
+            features = epochGroup.getFeatures(key);
+            
+            if ~ v.canIterateFeature() && numel(features) > 1
+                return;
+            end
+            description = [features.description];
+            currentIndex = v.getCurrentFeatureIndex();
+
+            functionDelegate = str2func(strcat('@(data, featureDescripion, axes) ', plot, '(data, featureDescripion, axes)'));
+            try
+                functionDelegate(data(currentIndex), description(currentIndex), axes);
+            catch exception
+                disp(exception.getReport);
+                v.showError(exception.message);
+            end
+        end
+
+        function enableFeatureIteration(obj, tf)
+            v = obj.view;
+            v.enablePreviousFeature(tf);
+            v.enableNextFeature(tf);
+            if tf 
+                v.updateCurrentFeatureIndex(1); % start with first index
+            end
+        end
+
         function onViewSelectedPlotFromPanel(obj, ~, ~)
             obj.plotSelectedNodes();
         end
@@ -297,6 +362,50 @@ classdef TreeBrowserPresenter < appbox.Presenter
             f = figure();
             ax = axes('Parent', f);
             obj.plotSelectedNodes(ax);
+        end
+
+        function onViewSelectedEnableFeatureIteration(obj, ~, ~)
+            obj.updateFeatureIterationControls();
+            obj.plotSelectedNodes();
+        end
+        
+        function updateFeatureIterationControls(obj)
+            v = obj.view;
+            nodes = v.getSelectedNodes();
+            index = v.getCurrentFeatureIndex();
+            enabled = v.canIterateFeature() && numel(nodes) == 1;
+            epochGroup = v.getNodeEntity(nodes(1));
+            key = v.getNodeName(nodes(1));
+            features = epochGroup.getFeatures(key);
+            n = numel(features);
+            v.setFeatureSize(n);
+
+            obj.enableFeatureIteration(enabled && n ~=1);
+            v.updateCurrentFeatureIndex(index);
+        end
+
+        function onViewSelectedGoToPreviosFeature(obj, ~, ~)
+            v = obj.view;
+            index = v.getCurrentFeatureIndex() - 1;
+            if index < 1
+                v.enablePreviousFeature(false);
+                v.enableNextFeature(true);
+                return
+            end
+            v.updateCurrentFeatureIndex(index);
+            obj.plotSelectedNodes();
+        end
+
+        function onViewSelectedGoToNextFeature(obj, ~, ~)
+            v = obj.view;
+            index = v.getCurrentFeatureIndex() + 1;
+            if index > v.getFeatureSize()
+                 v.enableNextFeature(false);
+                  v.enablePreviousFeature(true);
+                return
+            end
+            v.updateCurrentFeatureIndex(index);
+            obj.plotSelectedNodes();
         end
         
         function updateStateOfControls(obj)

@@ -8,6 +8,9 @@ classdef TreeBrowserView < appbox.View
         SelectedXAxis
         SelectedYAxis
         PopoutActivePlot
+        EnableFeatureIteration
+        GoToPreviousFeature
+        GoToNextFeature
         AddParameter
         RemoveParameter
         RunScript
@@ -29,6 +32,11 @@ classdef TreeBrowserView < appbox.View
         xPlotField
         yPlotField
         popoutPlot
+        itereateFeatureCheckBox
+        featureIndex
+        featureSize
+        previousFeature
+        nextFeature
     end
     
     methods
@@ -159,7 +167,38 @@ classdef TreeBrowserView < appbox.View
                 'String', 'Open Plot In New Figure', ...
                 'Enable', 'on', ...
                 'Callback', @(h,d)notify(obj, 'PopoutActivePlot'));
-            set(signalDetailControlLayout, 'Widths', [40 100 40 100 150]);
+            obj.itereateFeatureCheckBox = uicontrol( ...
+                'Parent', signalDetailControlLayout, ...
+                'Style', 'checkbox', ...
+                'String', 'Iterate Features', ...
+                'Enable', 'off',...
+                'Callback', @(h,d)notify(obj, 'EnableFeatureIteration'));
+            Label( ...
+                'Parent', signalDetailControlLayout, ...
+                'String', 'Showing feature #');
+            obj.featureIndex = uicontrol( ...
+                'Parent', signalDetailControlLayout, ...
+                'Style', 'edit', ...
+                'String', '1', ...
+                'Enable', 'off', ...
+                'HorizontalAlignment', 'left');
+            obj.featureSize =  Label( ...
+                'Parent', signalDetailControlLayout, ...
+                'String', ' / none');
+            obj.previousFeature = uicontrol( ...
+                'Parent', signalDetailControlLayout, ...
+                'Style', 'pushbutton', ...
+                'String', 'Previos', ...
+                'Enable', 'off', ...
+                'Callback', @(h,d)notify(obj, 'GoToPreviousFeature'));
+            obj.nextFeature = uicontrol( ...
+                'Parent', signalDetailControlLayout, ...
+                'Style', 'pushbutton', ...
+                'String', 'Next', ...
+                'Enable', 'off', ...
+                'Callback', @(h,d)notify(obj, 'GoToNextFeature'));
+
+            set(signalDetailControlLayout, 'Widths', [40 100 40 100 150 100 100 20 50 100 100]);
             set(signalLayout, 'Heights', [-1 30]);
             
             set(mainLayout, 'Widths', [-2 -5]);
@@ -223,8 +262,8 @@ classdef TreeBrowserView < appbox.View
             set(n, 'UIContextMenu', menu);
         end
         
-        function n = addFeatureNode(obj, parent, name)
-            value.entity = [];
+        function n = addFeatureNode(obj, parent, name, entity)
+            value.entity = entity;
             value.type = sa_labs.analysis.ui.views.EntityNodeType.FEATURE;
             n = uiextras.jTree.TreeNode( ...
                 'Parent', parent, ...
@@ -415,6 +454,41 @@ classdef TreeBrowserView < appbox.View
             set(obj.xPlotField, 'Enable', appbox.onOff(~tf));
             set(obj.yPlotField, 'Enable',  appbox.onOff(~tf));
         end
+
+        function enableFeatureIteration(obj, tf)
+            set(obj.itereateFeatureCheckBox, 'Enable', appbox.onOff(tf));
+        end
+        
+        function tf = canIterateFeature(obj)
+            tf = get(obj.itereateFeatureCheckBox, 'Value');
+        end
+        
+        function updateCurrentFeatureIndex(obj, index)
+            set(obj.featureIndex, 'String', num2str(index));
+        end
+
+        function index = getCurrentFeatureIndex(obj)
+            index = get(obj.featureIndex, 'String');
+            index = str2double(index);
+        end
+
+        function setFeatureSize(obj, n)
+            set(obj.featureSize, 'String', ['/' num2str(n)]);
+        end
+        
+        function n = getFeatureSize(obj)
+            n = get(obj.featureSize, 'String');
+            n = str2double(n(2:end));
+        end
+
+        function enablePreviousFeature(obj, tf)
+            set(obj.previousFeature, 'Enable', appbox.onOff(tf));
+        end
+        
+        function enableNextFeature(obj, tf)
+            set(obj.nextFeature, 'Enable', appbox.onOff(tf));
+        end
+
     end
     
     methods (Access = private)
