@@ -1,5 +1,5 @@
-classdef AnalyserSettings < appbox.Settings
-
+classdef TreeBrowserSettings < appbox.Settings
+   
     properties
         viewPosition
     end
@@ -16,5 +16,6 @@ classdef AnalyserSettings < appbox.Settings
         end
         
     end
+    
 end
 
