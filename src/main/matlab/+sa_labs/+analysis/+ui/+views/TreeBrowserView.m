@@ -443,6 +443,15 @@ classdef TreeBrowserView < appbox.View
         function setYAxisValues(obj, values)
             set(obj.yPlotField, 'String', values);
         end
+
+        function setYAxisValue(obj, value)
+            names = get(obj.yPlotField, 'String');
+            [~, index] = ismember(names, value);
+            value = find(index);
+            if any(value)
+                set(obj.yPlotField, 'Value', value);
+            end
+        end
         
         function value = getYAxisValue(obj)
             names = get(obj.yPlotField, 'String');
