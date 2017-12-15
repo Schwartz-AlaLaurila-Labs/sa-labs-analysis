@@ -199,6 +199,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
                     obj.viewCellParameters();
                 case EntityNodeType.FEATURE
                     obj.view.enableFeatureIteration(true);
+                    obj.view.updateCurrentFeatureIndex(1);
                     obj.updateFeatures();
             end
             obj.plotSelectedNodes();
