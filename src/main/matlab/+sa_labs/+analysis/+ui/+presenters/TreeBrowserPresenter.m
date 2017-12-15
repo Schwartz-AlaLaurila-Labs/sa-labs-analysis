@@ -95,15 +95,15 @@ classdef TreeBrowserPresenter < appbox.Presenter
             end
         end
 
-        function addEpochGroup(obj, groupName, parentNode, parentGroupName)
+        function addEpochGroup(obj, groupName, parentNode, parentGroupId)
             isNodeCreated = false;
             if nargin < 4
-                parentGroupName = [];
+                parentGroupId = [];
                 isNodeCreated = true;
             end
             
             finder = obj.featureTreeFinder;
-            epochGroup = finder.find(groupName, 'hasParent', parentGroupName).toArray();
+            epochGroup = finder.find(groupName, 'hasParentId', parentGroupId).toArray();
             % create node only for epoch groups
             if ~ isNodeCreated
                 n = obj.view.addEpochGroupNode(parentNode, epochGroup.name, epochGroup);
@@ -114,7 +114,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
             obj.addFeatures(epochGroup);            
             
             for childEpochGroup = each(finder.getChildEpochGroups(epochGroup))
-                obj.addEpochGroup(childEpochGroup.name, n, epochGroup.name);
+                obj.addEpochGroup(childEpochGroup.name, n, epochGroup.id);
             end
         end
 
@@ -198,6 +198,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
                 case EntityNodeType.CELLS
                     obj.viewCellParameters();
                 case EntityNodeType.FEATURE
+                    obj.updateYAxisMenu();
                     obj.view.enableFeatureIteration(true);
                     obj.view.updateCurrentFeatureIndex(1);
                     obj.updateFeatures();
@@ -286,7 +287,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
 
             if type.isEpochGroup()
                 obj.plotEpochGroups(axes);
-            elseif type.isFeature()
+            end
+            
+            if type.isFeature()
                 obj.plotFeature(axes);
             end
         end
@@ -295,7 +298,11 @@ classdef TreeBrowserPresenter < appbox.Presenter
             v = obj.view;
             nodes = v.getSelectedNodes();
             plot = v.getActivePlot();
-
+            
+            if any(strfind(plot, 'Feature'))
+               return 
+            end
+            
             parameter = struct();
             parameter.xAxis = v.getXAxisValue();
             parameter.yAxis = v.getYAxisValue();
@@ -320,22 +327,34 @@ classdef TreeBrowserPresenter < appbox.Presenter
             end
             epochGroup = v.getNodeEntity(nodes);
             key = v.getNodeName(nodes);
-            data = epochGroup.getFeatureData(key);
             features = epochGroup.getFeatures(key);
             
             if ~ v.canIterateFeature() && numel(features) > 1
                 return;
             end
-            description = [features.description];
-            currentIndex = v.getCurrentFeatureIndex();
-
-            functionDelegate = str2func(strcat('@(data, featureDescripion, axes) ', plot, '(data, featureDescripion, axes)'));
+            parameter = struct();
+            parameter.xAxis = v.getXAxisValue();
+            parameter.yAxis = v.getYAxisValue();
+            parameter.index =  v.getCurrentFeatureIndex();
+            
+            functionDelegate = str2func(strcat('@(epochGroup, parameter, axes) ', plot, '(epochGroup, parameter, axes)'));
             try
-                functionDelegate(data(currentIndex), description(currentIndex), axes);
+                functionDelegate(epochGroup, parameter, axes);
             catch exception
                 disp(exception.getReport);
                 v.showError(exception.message);
             end
+        end
+        
+        function updateYAxisMenu(obj)
+            v = obj.view;
+            plot = v.getActivePlot();
+            nodes = v.getSelectedNodes();
+            if ~ any(strfind(plot, 'Feature')) || numel(nodes) > 1
+                return
+            end
+            key = v.getNodeName(nodes);
+            v.setYAxisValue(key);
         end
 
         function enableFeatureIteration(obj, tf)
@@ -388,9 +407,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function onViewSelectedGoToPreviosFeature(obj, ~, ~)
             v = obj.view;
             index = v.getCurrentFeatureIndex() - 1;
+            v.enableNextFeature(true);
             if index < 1
                 v.enablePreviousFeature(false);
-                v.enableNextFeature(true);
                 return
             end
             v.updateCurrentFeatureIndex(index);
@@ -400,9 +419,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function onViewSelectedGoToNextFeature(obj, ~, ~)
             v = obj.view;
             index = v.getCurrentFeatureIndex() + 1;
+            v.enablePreviousFeature(true);
             if index > v.getFeatureSize()
                  v.enableNextFeature(false);
-                  v.enablePreviousFeature(true);
                 return
             end
             v.updateCurrentFeatureIndex(index);
