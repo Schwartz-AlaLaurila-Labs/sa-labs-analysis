@@ -286,8 +286,11 @@ classdef TreeBrowserPresenter < appbox.Presenter
 
             if type.isEpochGroup()
                 obj.plotEpochGroups(axes);
-            elseif type.isFeature()
+            end
+            
+            if type.isFeature()
                 obj.plotFeature(axes);
+                obj.plotEpochGroups(axes);
             end
         end
 
@@ -295,7 +298,11 @@ classdef TreeBrowserPresenter < appbox.Presenter
             v = obj.view;
             nodes = v.getSelectedNodes();
             plot = v.getActivePlot();
-
+            
+            if any(strfind(plot, 'Feature'))
+               return 
+            end
+            
             parameter = struct();
             parameter.xAxis = v.getXAxisValue();
             parameter.yAxis = v.getYAxisValue();
@@ -388,9 +395,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function onViewSelectedGoToPreviosFeature(obj, ~, ~)
             v = obj.view;
             index = v.getCurrentFeatureIndex() - 1;
+            v.enableNextFeature(true);
             if index < 1
                 v.enablePreviousFeature(false);
-                v.enableNextFeature(true);
                 return
             end
             v.updateCurrentFeatureIndex(index);
@@ -400,9 +407,9 @@ classdef TreeBrowserPresenter < appbox.Presenter
         function onViewSelectedGoToNextFeature(obj, ~, ~)
             v = obj.view;
             index = v.getCurrentFeatureIndex() + 1;
+            v.enablePreviousFeature(true);
             if index > v.getFeatureSize()
                  v.enableNextFeature(false);
-                  v.enablePreviousFeature(true);
                 return
             end
             v.updateCurrentFeatureIndex(index);

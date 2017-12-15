@@ -19,14 +19,15 @@ end
 
 [rows, ~] = size(data);
 x = featureDescripion.xAxis;
+hold(axes, 'on');
+
 for row = 1 : rows 
 	plot(axes, x, data{row});
-	hold(axes, 'on');
 end
 hold(axes, 'off');
 xlabel(axes, featureDescripion.xLabel);
 ylabel(axes, featureDescripion.yLabel);
-
+title(axes, featureDescripion.description);
 end
 
 function tf = isEpoch(id)

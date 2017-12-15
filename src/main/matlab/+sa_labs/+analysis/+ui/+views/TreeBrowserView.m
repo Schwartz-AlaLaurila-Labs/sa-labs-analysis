@@ -98,7 +98,7 @@ classdef TreeBrowserView < appbox.View
                 'Enable', 'on', ...
                 'Callback', @(h,d)notify(obj, 'SelectedPlots'));
             set(plotControlsLayout, 'Heights', [20 -1]);
-            set(analysisTreeAndPlotControlsLayout, 'Widths', [-1 -1]);
+            set(analysisTreeAndPlotControlsLayout, 'Widths', [-1.3 -1]);
             % Epoch group parameters CRUD
             parameterLayout = uix.HBox( ...
                 'Parent', masterControlsLayout, ...
@@ -201,7 +201,7 @@ classdef TreeBrowserView < appbox.View
             set(signalDetailControlLayout, 'Widths', [40 100 40 100 150 100 100 20 50 100 100]);
             set(signalLayout, 'Heights', [-1 30]);
             
-            set(mainLayout, 'Widths', [-2 -5]);
+            set(mainLayout, 'Widths', [400 -1]);
         end
         
         % Add / remove tree nodes
