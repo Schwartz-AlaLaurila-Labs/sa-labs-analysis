@@ -63,8 +63,7 @@ buildAnalysis('Example-Analysis_01', analysisFilter)
 - It follows maven style source code organization
 - All the dependency will be present in toolbox folder
 
-![analysis framework](etc/analysi-framework.png)
+MIT License
 
-### Data Flow and managemnt
+Copyright (c) 2017 Schwartz-AlaLaurila-Labs
 
-![data flow](etc/data-flow.png)
