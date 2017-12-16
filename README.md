@@ -4,6 +4,10 @@ Data analysis toolbox for Multi-electrode patch clamp recordings. It is designed
 
 ### 1. Data Curator
 
+```Matlab
+> openCurator()
+```
+
 ![Data Curator](etc/curator.gif)
 
 ### 2. Analysis Pipeline
@@ -39,6 +43,11 @@ buildAnalysis('Example-Analysis_01', analysisFilter)
 ```
 
 ### 3. Tree Browser
+
+
+```Matlab
+> openTreeBrowser('Example-Analysis_01')
+```
 
 ![Data Curator](etc/tree_browser.gif)
 
