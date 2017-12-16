@@ -8,7 +8,9 @@ ui_test.testCurator();
 %% Create the analysis project
 
 clear;
-[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis_01', 'experiments', {'101217Dc'}, 'override', false);
+[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis_01',...
+    'experiments', {'101217Dc*Amp2'},...
+    'override', true);
 % open the project file
 open(project.file)
 %% Create a simple search tree definition
@@ -17,7 +19,12 @@ analysisFilter = struct();
 analysisFilter.type = 'LightStepAnalysis';
 analysisFilter.buildTreeBy = {'displayName', 'intensity', 'stimTime'};
 analysisFilter.displayName.splitValue = {'Light Step'};
-analysisFilter.stimTime.featureExtractor = {@(a, g, p) sa_labs.analysis.common.extractors.psthExtractor(a, g, p)};
+analysisFilter.stimTime.featureExtractor = {@(analysis, epochGroup, analysisParameter)...
+     sa_labs.analysis.common.extractors.psthExtractor(...
+     analysis,...
+     epochGroup,...
+     analysisParameter)...
+    };
 
 % Build the tree based on the tree definition
 

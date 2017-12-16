@@ -2,14 +2,58 @@
 
 Data analysis toolbox for Multi-electrode patch clamp recordings. It is designed to supports both online and offline analysis by using shared libraries and data structure.
 
+### 1. Data Curator
+
 ![Data Curator](etc/curator.gif)
 
-### Installation
+### 2. Analysis Pipeline
 
-1. Download and install [ToolboxToolbox](https://github.com/ToolboxHub/ToolboxToolbox)
-2. Restart Matlab
-3. `git clone https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis.git` into `<userpath>\projects\sa-labs-analysis` folder 
-4. open the matlab command window and run `tbUseProject('sa-labs-analysis')`
+```Matlab
+
+%% Create the analysis project
+% --------------------------------------------
+clear;
+[project, offlineAnalysisManager] = createAnalysisProject('Example-Analysis_01',...
+    'experiments', {'101217Dc*Amp2'},...
+    'override', true);
+% open the project file
+open(project.file)
+
+%% Create a simple search tree definition
+% --------------------------------------------
+analysisFilter = struct();
+analysisFilter.type = 'LightStepAnalysis';
+analysisFilter.buildTreeBy = {'displayName', 'intensity', 'stimTime'};
+analysisFilter.displayName.splitValue = {'Light Step'};
+analysisFilter.stimTime.featureExtractor = {@(analysis, epochGroup, analysisParameter)...
+     sa_labs.analysis.common.extractors.psthExtractor(...
+     analysis,...
+     epochGroup,...
+     analysisParameter)...
+    };
+
+%% Build the tree based on the tree definition
+% --------------------------------------------
+buildAnalysis('Example-Analysis_01', analysisFilter)
+
+```
+
+### 3. Tree Browser
+
+![Data Curator](etc/tree_browser.gif)
+
+## Usage
+
+[GitBook doc](https://ala-laurila-lab.gitbooks.io/sa-labs-analysis-docs/content/)
+
+* [Introduction](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/README.md)
+* [Getting Started](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/getting-started.md)
+* [Parsing your data](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/parsing-your-data.md)
+  * [Data curator features](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/parsing-your-data/data-curator-features.md)
+* [Building analysis pipeline](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/building-analysis-pipeline.md)
+  * [Creating feature extractor](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/building-analysis-pipeline/creating-feature-extractor.md)
+* [Visualizing your results](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/visualizing-your-results.md)
+* [Dependency](https://github.com/Schwartz-AlaLaurila-Labs/sa-labs-analysis-docs/blob/master/documentation/dependency.md)
 
 ### Folder organization
 
@@ -24,28 +68,3 @@ Data analysis toolbox for Multi-electrode patch clamp recordings. It is designed
 ### Data Flow and managemnt
 
 ![data flow](etc/data-flow.png)
-
-### Usage
-
-TODO API documentation
-
-### Requirements
-
-- Matlab 2016a+
-- [ToolboxHub](https://github.com/ToolboxHub/ToolboxToolbox) for dependency 
-management
-
-### Matlab dependencies
-    
-     sa-labs-analysis
-        |
-        |____ sa-labs-analysis-core
-        |    
-        |____ sa-labs-util       
-        |    
-        |____ sa-labs-analysis-preference
-        |    
-        |____ app-toolboxes
-
-
-
