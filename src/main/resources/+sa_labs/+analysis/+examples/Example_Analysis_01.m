@@ -1,5 +1,5 @@
 %% Set the matlab path !
-tbUseProject('sa-labs-analysis', 'online', false); 
+tbUseProject('sa-labs-analysis', 'online', false);
 
 %% Load the curator GUI
 

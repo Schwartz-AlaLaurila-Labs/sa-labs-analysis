@@ -16,7 +16,7 @@
 	},
 	{
 		"extra": "",
-		"flavor": "",
+		"flavor": "entity-migrations",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
@@ -73,7 +73,7 @@
 		"type": "git",
 		"update": "",
 	    "url": "https://github.com/ewiger/yamlmatlab"
-	},    
+	},
     {
 		"extra": "",
 		"flavor": "",
