@@ -16,7 +16,7 @@
 	},
 	{
 		"extra": "",
-		"flavor": "entity-migrations",
+		"flavor": "",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
