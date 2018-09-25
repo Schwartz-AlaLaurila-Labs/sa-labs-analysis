@@ -61,7 +61,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             
             v = obj.view;
             obj.addListener(v, 'BrowseLocation', @obj.onViewSelectedBrowseLocation);
-            obj.addListener(v, 'LoadH5File', @obj.onViewLoadH5File);
+            obj.addListener(v, 'LoadSelectedCell', @obj.onViewLoadCell);
             obj.addListener(v, 'ReParse', @obj.onViewReParse);
             obj.addListener(v, 'ShowFilteredEpochs', @obj.onViewShowFilteredEpochs);
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
@@ -145,26 +145,29 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.intializeCurator();
         end
         
-        function onViewLoadH5File(obj, ~, ~)
-            pattern = obj.view.getH5FileName();
+        function onViewLoadCell(obj, ~, ~)
+            pattern = obj.view.getSelectedCellName();
             if isempty(pattern) || strcmp(pattern, obj.view.getExperimentName())
                 return
             end
-            obj.intializeCurator();
+            
+            p = obj.view.showBusy('Loading cell ...');
+            d = onCleanup(@()delete(p));         
+            obj.closeExisting();
+
+            cellData = obj.offlineAnalysisManager.getParsedCellData(pattern);
+            obj.updatePlotPanel();
+            obj.view.setExperimentNode(pattern, cellData);
+            obj.populateEntityTree(cellData);
         end
         
         function intializeCurator(obj)
             pattern = obj.view.getH5FileName();
-            p = obj.view.showBusy('Loading h5 file..');
+            p = obj.view.showBusy('Loading h5 file ...');
             d = onCleanup(@()delete(p));
             
-            obj.closeExisting();
             cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
-            
-            obj.updatePlotPanel();
-            obj.view.setExperimentNode(pattern, cellDataArray);
-            obj.populateEntityTree(cellDataArray);
-            obj.populateFilterDetails(cellDataArray);
+            obj.populateAvailableCellsMenu(cellDataArray);
         end
         
         function closeExisting(obj)
@@ -447,7 +450,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.view.enableAddAndDeleteParameters(false);
         end
         
-        function populateFilterDetails(obj, cellDataArray)
+        function populateAvailableCellsMenu(obj, cellDataArray)
             if isempty(cellDataArray)
                 return
             end
