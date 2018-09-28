@@ -146,8 +146,8 @@ classdef DataCuratorPresenter < appbox.Presenter
         end
         
         function onViewLoadCell(obj, ~, ~)
-            pattern = obj.view.getSelectedCellName();
-            if isempty(pattern) || strcmp(pattern, obj.view.getExperimentName())
+            cellName = obj.view.getSelectedCellName();
+            if isempty(cellName) || strcmp(cellName, obj.view.getExperimentName())
                 return
             end
             
@@ -155,9 +155,9 @@ classdef DataCuratorPresenter < appbox.Presenter
             d = onCleanup(@()delete(p));         
             obj.closeExisting();
 
-            cellData = obj.offlineAnalysisManager.getParsedCellData(pattern);
+            cellData = obj.offlineAnalysisManager.getParsedCellData(cellName);
             obj.updatePlotPanel();
-            obj.view.setExperimentNode(pattern, cellData);
+            obj.view.setExperimentNode(cellName, cellData);
             obj.populateEntityTree(cellData);
         end
         
@@ -166,7 +166,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             p = obj.view.showBusy('Loading h5 file ...');
             d = onCleanup(@()delete(p));
             
-            cellDataArray = obj.offlineAnalysisManager.getParsedCellData(pattern);
+            cellDataArray = obj.offlineAnalysisManager.getParsedCellData([pattern '*']);
             obj.populateAvailableCellsMenu(cellDataArray);
         end
         
@@ -456,7 +456,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             end
             cellNames = {cellDataArray.recordingLabel};
             obj.view.setAvailableCellNames(cellNames);
-            obj.populateFilterProperties();
+            obj.view.enableAvailableCellMenu(numel(cellNames) > 0);
         end
         
         function populateFilterProperties(obj)
