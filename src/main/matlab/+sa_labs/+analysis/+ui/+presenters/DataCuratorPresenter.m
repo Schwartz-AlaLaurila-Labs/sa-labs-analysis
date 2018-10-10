@@ -79,7 +79,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'PopoutActivePlot', @obj.onViewSelectedPopOutPlot);
             obj.addListener(v, 'AddParameter', @obj.onViewSelectedAddParamter);
             obj.addListener(v, 'RemoveParameter', @obj.onViewSelectedRemoveParamter);
-            obj.addListener(v, 'SelectedCell', @obj.onViewSelectedCell);
             obj.addListener(v, 'SelectedFilter', @obj.onViewSelectedFilter);
             obj.addListener(v, 'SelectedFilterProperty', @obj.onViewSelectedFilterProperty);
             obj.addListener(v, 'SelectedFilterRow', @obj.onViewSelectedFilterRow);
@@ -159,6 +158,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.updatePlotPanel();
             obj.view.setExperimentNode(cellName, cellData);
             obj.populateEntityTree(cellData);
+            obj.populateFilterProperties();
         end
         
         function intializeCurator(obj)
@@ -168,9 +168,19 @@ classdef DataCuratorPresenter < appbox.Presenter
             
             cellDataArray = obj.offlineAnalysisManager.getParsedCellData([pattern '*']);
             obj.populateAvailableCellsMenu(cellDataArray);
+            obj.closeExisting();
+            obj.view.setExperimentNode('No cell selected', []);
         end
         
         function closeExisting(obj)
+            obj.view.disablePlotPannel(true);
+            obj.view.disableXYAxis(true);
+            try 
+                plot = obj.view.getActivePlot();
+                sa_labs.analysis.util.clearAxes(obj.view.getAxes(plot))
+            catch e
+                obj.log.debug(['Failed to get plot handle: ' e.message]);
+            end
             node = obj.view.getCellFolderNode();
             obj.view.removeChildNodes(node);
         end
@@ -415,11 +425,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.offlineAnalysisManager.saveCellData(entity);
             obj.populateFilterProperties();
        end
-        
-        function onViewSelectedCell(obj, ~, ~)
-            obj.populateFilterProperties();
-        end
-        
+                
         function onViewSelectedFilter(obj, ~, ~)
             name = obj.view.getSelectedFilterName();
             if strcmpi(name, 'None')
