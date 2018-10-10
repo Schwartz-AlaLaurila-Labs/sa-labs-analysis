@@ -34,7 +34,7 @@ setLogger();
         path = context.getBean('fileRepository').logFile;
         logger = logging.getLogger(LOGGER_NAME);
         logger.setFilename(path);
-        logger.setLogLevel(logging.logging.DEBUG);
-        logger.setCommandWindowLevel(logging.logging.INFO);
+        logger.setLogLevel(logging.logging.INFO);
+        logger.setCommandWindowLevel(logging.logging.WARNING);
     end
 end
