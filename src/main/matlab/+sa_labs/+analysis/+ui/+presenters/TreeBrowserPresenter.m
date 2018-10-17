@@ -90,20 +90,20 @@ classdef TreeBrowserPresenter < appbox.Presenter
                     cellData = project.getCellData(cellName);
                     n = obj.view.addCellsNode(analysisNode, cellName, cellData);
                     groupName = project.getAnalysisResultName(analysisType, cellName);
-                    obj.addEpochGroup(groupName, n);
+                    obj.addEpochGroup(groupName, [], n);
                 end
             end
         end
 
-        function addEpochGroup(obj, groupName, parentNode, parentGroupId)
+        function addEpochGroup(obj, groupName, value, parentNode, parentGroupId)
             isNodeCreated = false;
-            if nargin < 4
+            if nargin < 5
                 parentGroupId = [];
                 isNodeCreated = true;
             end
             
             finder = obj.featureTreeFinder;
-            epochGroup = finder.find(groupName, 'hasParentId', parentGroupId).toArray();
+            epochGroup = finder.find(groupName, 'value', value, 'hasParentId', parentGroupId).toArray();
             % create node only for epoch groups
             if ~ isNodeCreated
                 n = obj.view.addEpochGroupNode(parentNode, epochGroup.name, epochGroup);
@@ -114,7 +114,7 @@ classdef TreeBrowserPresenter < appbox.Presenter
             obj.addFeatures(epochGroup);            
             
             for childEpochGroup = each(finder.getChildEpochGroups(epochGroup))
-                obj.addEpochGroup(childEpochGroup.name, n, epochGroup.id);
+                obj.addEpochGroup(childEpochGroup.name, 'value', childEpochGroup.splitValue, n, epochGroup.id);
             end
         end
 
