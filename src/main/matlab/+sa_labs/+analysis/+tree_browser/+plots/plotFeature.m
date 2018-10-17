@@ -21,7 +21,10 @@ if isEpoch(featureDescripion.id)
     response = cell2mat(data);
     key = upper(strcat(featureDescripion.device, '_', 'SPIKETIMES'));
     features = epochGroup.getFeatures(key);
-    spikeTimes = cell2mat(features(index).data);
+    spikeTimes = [];
+    if ~ isempty(features)
+        spikeTimes = cell2mat(features(index).data);
+    end
     
     if ~ isempty(spikeTimes)
         plots.plotSpikes(spikeTimes, response, featureDescripion, axes);
