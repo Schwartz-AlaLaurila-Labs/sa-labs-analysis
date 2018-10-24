@@ -7,6 +7,7 @@ classdef DataCuratorView < appbox.View
         ShowFilteredEpochs
         SelectedNodes
         SelectedDevices
+        RemoveDevicesFromEpoch
         SelectedPlots
         SelectedPlotFromPanel
         SelectedPreProcessor
@@ -50,6 +51,7 @@ classdef DataCuratorView < appbox.View
         executePreProcessorButton
         excludeCurrentEpochCheckBox
         availableDevices
+        removeDevicesButton
         availablePlots
         tabPanel
         plotCard
@@ -197,6 +199,12 @@ classdef DataCuratorView < appbox.View
                 'Min', 1, ...
                 'Enable', 'off', ...
                 'Callback', @(h,d)notify(obj, 'SelectedDevices'));
+            obj.removeDevicesButton = uicontrol( ...
+                'Parent', signalPreProcessingLayout, ...
+                'Style', 'pushbutton', ...
+                'String', 'Remove device(s)', ...
+                'Enable', 'off', ...
+                'Callback', @(h,d)notify(obj, 'RemoveDevicesFromEpoch'));
             Label( ...
                 'Parent', signalPreProcessingLayout, ...
                 'String', 'Available Plots:');
@@ -223,7 +231,7 @@ classdef DataCuratorView < appbox.View
                 'Style', 'pushbutton', ...
                 'String', 'Execute', ...
                 'Callback', @(h,d)notify(obj, 'ExecutePreProcessor'));
-            set(signalPreProcessingLayout, 'Heights', [30 -1 30 -2 30 -3 -2 30]);
+            set(signalPreProcessingLayout, 'Heights', [30 -1 30 30 -2 30 -3 -2 30]);
 
             signalDetailLayout = uix.VBox( ...
                 'Parent', signalLayout, ...
@@ -435,9 +443,22 @@ classdef DataCuratorView < appbox.View
         function devices = getSelectedDevices(obj)
              devices = get(obj.availableDevices, 'Value');
         end
+
+        function tf = unSelectDevices(obj, devices)
+          allDevices = get(obj.availableDevices, 'Values');
+          activeDevices = setdiff(allDevices, devices);
+          if numel(activeDevices) > 0
+             set(obj.availableDevices, 'Value', activeDevices{1});
+          end
+          tf = numel(activeDevices) > 0;
+        end
         
         function enableSelectDevices(obj, tf)
             set(obj.availableDevices, 'Enable', appbox.onOff(tf));
+        end
+
+        function enableRemoveDevices(obj, tf)
+          set(obj.removeDevicesButton, 'Enable', appbox.onOff(tf));
         end
         
         function setAvailablePlots(obj, names, values)
