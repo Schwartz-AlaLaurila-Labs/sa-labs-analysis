@@ -67,6 +67,7 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
             obj.addListener(v, 'RemoveDevicesFromEpoch', @obj.onViewRemoveDevicesFromEpochs);
+            obj.addListener(v, 'UndoRemoveDevicesFromEpoch', @obj.onViewUndoRemoveDevicesFromEpochs);
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
             obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
@@ -909,6 +910,27 @@ classdef DataCuratorPresenter < appbox.Presenter
                 end
             end
             obj.offlineAnalysisManager.saveCellData(epochs);
+        end
+
+        function onViewUndoRemoveDevicesFromEpochs(obj, ~, ~)
+            entitiyMap = obj.getSelectedEntityMap();
+            epochs = obj.getSelectedEpoch(entitiyMap);
+            if isempty(epochs)
+                return
+            end
+            for epoch = each(epochs)
+                if ~ isKey(epoch.derivedAttributes, 'removedDevices')
+                    continue;
+                end
+                removedDataLinks = epoch.derivedAttributes('removedDevices');
+                keys = removedDataLinks.keys;
+                values = removedDataLinks.values;
+                for index = 1 : numel(keys)
+                    epoch.dataLinks(keys{index}) = values{index};
+                end
+            end
+            obj.offlineAnalysisManager.saveCellData(epochs);
+            obj.plotEntityMap(entitiyMap);
         end
     end
 end
