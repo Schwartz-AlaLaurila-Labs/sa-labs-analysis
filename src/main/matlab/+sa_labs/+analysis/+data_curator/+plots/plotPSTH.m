@@ -5,7 +5,7 @@ function plotPSTH(epochData, parameter, axes)
 %   default : duration
 %   description: Protocol properties can be visualized for above deafault properties
 % yAxis:
-%   default: "@(epochData) keys(epochData.parentCell.getEpochValuesMap('displayName'))"
+%   default: "@(epochData) sa_labs.analysis.data_curator.plots.params.getRasterYAxis(epochData)"
 %   description: List of protocol name
 % ---
 

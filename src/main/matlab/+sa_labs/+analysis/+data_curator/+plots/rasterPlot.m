@@ -5,7 +5,7 @@ function rasterPlot(epochData, parameter, axes)
 %   default : duration
 %   description: Protocol properties can be visualized for above deafault properties
 % yAxis:
-%   default: "@(epochData) keys(epochData.parentCell.getEpochValuesMap('displayName'))"
+%   default: "@(epochData) sa_labs.analysis.data_curator.plots.params.getRasterYAxis(epochData)"
 %   description: List of protocol name
 % ---
 
@@ -13,8 +13,18 @@ import sa_labs.analysis.*;
 util.clearAxes(axes);
 
 epochs = epochData.parentCell.epochs;
-selectedEpochsIdx = arrayfun(@(epoch) strcmp(epoch.get('displayName'), parameter.yAxis), epochs);
+if ~ strcmpi(parameter.yAxis, 'Filtered epochs')
+    selectedEpochsIdx = arrayfun(@(epoch) strcmp(epoch.get('displayName'), parameter.yAxis), epochs);
+else
+    selectedEpochsIdx = [epochs.filtered];
+end
+
+if isempty(selectedEpochsIdx) || any(selectedEpochsIdx) == 0
+    error('No epochs found, Execute filter and try again')
+end
+
 selectedEpochs = epochs(selectedEpochsIdx);
+epochNumbers = epochData.parentCell.getEpochValues('epochNum', selectedEpochsIdx);
 
 devices = parameter.devices;
 axesArray = util.getNewAxesForSublot(axes, numel(devices));
@@ -31,9 +41,9 @@ for i = 1 : n
     cMap = 1 - colormap(axes, 'gray');
     colormap(axes, cMap)
     set(axes, 'Layer', 'top')
-    set(axes, 'XTick', [], 'YTick', [])
+    set(axes, 'XTick', [], 'YTick', 1:numel(epochNumbers), 'YTickLabels', epochNumbers)
     set(axes, 'XLim', [1, size(rasters, 2)],'YLim', [1, size(rasters, 1)]);
-    ylabel(axes, device);
+    ylabel(axes, [device ' (epochNum)']);
 end
 xlabel(axes, parameter.xAxis)
 title(axesArray(1), ['Raster plot for protocol (' parameter.yAxis ')']);
