@@ -549,6 +549,8 @@ classdef DataCuratorPresenter < appbox.Presenter
             function setFiltered(epoch, tf)
                 epoch.filtered = tf;
             end
+            entitiyMap = obj.getSelectedEntityMap();
+            obj.plotEntityMap(entitiyMap);
         end
         
         function predicate = getFilterPredicate(obj, rowData)

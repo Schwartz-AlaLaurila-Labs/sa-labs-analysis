@@ -681,7 +681,7 @@ classdef DataCuratorView < appbox.View
         end
         
         function setFilterProperty(obj, properties)
-            obj.filterTable.ColumnFormatData{1} = properties;
+            obj.filterTable.ColumnFormatData{1} = [{''}, properties{:}];
             obj.filterTable.ColumnFormatData{2} = {''};
         end
         
