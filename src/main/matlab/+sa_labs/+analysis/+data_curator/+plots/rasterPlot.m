@@ -2,33 +2,33 @@ function rasterPlot(epochData, parameter, axes)
 
 % description : Raster plot
 % xAxis:
-%   default : duration
-%   description: Protocol properties can be visualized for above deafault properties
-% yAxis:
-%   default: "@(epochData) sa_labs.analysis.data_curator.plots.params.getRasterYAxis(epochData)"
+%   default : "@(epochData) keys(epochData.parentCell.getEpochValuesMap('displayName'))"
 %   description: List of protocol name
+% yAxis:
+%   default: "@(epochData) setdiff(epochData.parentCell.getEpochKeysetUnion(), {'epochNum', 'epochStartTime'})"
+%   description: Group by selected parameters
 % ---
 
 import sa_labs.analysis.*;
 util.clearAxes(axes);
 
 epochs = epochData.parentCell.epochs;
-if ~ strcmpi(parameter.yAxis, 'Filtered epochs')
-    selectedEpochsIdx = arrayfun(@(epoch) strcmp(epoch.get('displayName'), parameter.yAxis), epochs);
-else
-    selectedEpochsIdx = [epochs.filtered];
+values = epochData.parentCell.getEpochValues(parameter.yAxis);
+[sortedValues, idx] = sort(values);
+selectedEpochsIdx = find(arrayfun(@(epoch) strcmp(epoch.get('displayName'), parameter.xAxis), epochs));
+validIdx = intersect(idx, selectedEpochsIdx, 'stable');
+
+if numel(validIdx) ~= numel(selectedEpochsIdx)
+    error('Invalid yAxis parameter')
 end
 
-if isempty(selectedEpochsIdx) || any(selectedEpochsIdx) == 0
-    error('No epochs found, Execute filter and try again')
-end
-
-selectedEpochs = epochs(selectedEpochsIdx);
-epochNumbers = epochData.parentCell.getEpochValues('epochNum', selectedEpochsIdx);
-
+selectedEpochs = epochs(validIdx);
+epochNumbers = epochData.parentCell.getEpochValues('epochNum', validIdx);
 devices = parameter.devices;
 axesArray = util.getNewAxesForSublot(axes, numel(devices));
 n = numel(devices);
+
+groupByIdx = [1 find(diff(sortedValues)) + 1];
 
 for i = 1 : n
     device = devices{i};
@@ -41,12 +41,17 @@ for i = 1 : n
     cMap = 1 - colormap(axes, 'gray');
     colormap(axes, cMap)
     set(axes, 'Layer', 'top')
-    set(axes, 'XTick', [], 'YTick', 1:numel(epochNumbers), 'YTickLabels', epochNumbers)
-    set(axes, 'XLim', [1, size(rasters, 2)],'YLim', [1, size(rasters, 1)]);
-    ylabel(axes, [device ' (epochNum)']);
+    set(axes, 'XTick', [])
+    yticks = get(axes, 'YTick');
+     set(axes, 'XTick', [], 'YTick', 1:numel(epochNumbers), 'YTickLabels', epochNumbers)
+    for divider = groupByIdx
+        h = refline(axes, 0, divider);
+        h.DisplayName = [ parameter.yAxis ' = ' num2str(sortedValues(divider))];
+        legend(axes);
+    end
 end
 xlabel(axes, parameter.xAxis)
-title(axesArray(1), ['Raster plot for protocol (' parameter.yAxis ')']);
+title(axesArray(1), ['Raster plot for protocol (' parameter.xAxis ') group by (' parameter.yAxis  ')']);
 hold(axes, 'off');
 end
 
