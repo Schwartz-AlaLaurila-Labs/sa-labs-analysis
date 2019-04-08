@@ -28,7 +28,7 @@ devices = parameter.devices;
 axesArray = util.getNewAxesForSublot(axes, numel(devices));
 n = numel(devices);
 
-groupByIdx = [1 find(diff(sortedValues)) + 1];
+groupByIdx = [1 find(diff(sortedValues(epochNumbers))) + 1];
 
 for i = 1 : n
     device = devices{i};
@@ -43,10 +43,10 @@ for i = 1 : n
     set(axes, 'Layer', 'top')
     set(axes, 'XTick', [])
     yticks = get(axes, 'YTick');
-     set(axes, 'XTick', [], 'YTick', 1:numel(epochNumbers), 'YTickLabels', epochNumbers)
+    set(axes, 'XTick', [], 'YTick', 1:numel(epochNumbers), 'YTickLabels', epochNumbers)
     for divider = groupByIdx
         h = refline(axes, 0, divider);
-        h.DisplayName = [ parameter.yAxis ' = ' num2str(sortedValues(divider))];
+        h.DisplayName = [ parameter.yAxis ' = ' num2str(epochNumbers(divider))];
         legend(axes);
     end
 end
