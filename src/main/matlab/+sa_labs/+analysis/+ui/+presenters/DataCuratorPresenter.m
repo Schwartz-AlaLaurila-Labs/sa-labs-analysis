@@ -66,8 +66,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             obj.addListener(v, 'ShowFilteredEpochs', @obj.onViewShowFilteredEpochs);
             obj.addListener(v, 'SelectedNodes', @obj.onViewSelectedNodes).Recursive = true;
             obj.addListener(v, 'SelectedDevices', @obj.onViewSelectedDevices);
-            obj.addListener(v, 'RemoveDevicesFromEpoch', @obj.onViewRemoveDevicesFromEpochs);
-            obj.addListener(v, 'UndoRemoveDevicesFromEpoch', @obj.onViewUndoRemoveDevicesFromEpochs);
             obj.addListener(v, 'SelectedPlots', @obj.onViewSelectedPlots);
             obj.addListener(v, 'SelectedPlotFromPanel', @obj.onViewSelectedPlotFromPanel);
             obj.addListener(v, 'SelectedPreProcessor', @obj.onViewSelectedPreProcessor);
@@ -639,7 +637,6 @@ classdef DataCuratorPresenter < appbox.Presenter
             devices = linq(cellDataArray).selectMany(@(d) d.getEpochValues('devices')).distinct().toList();
             obj.view.setAvailableDevices(devices, devices);
             obj.view.enableSelectDevices(numel(devices) > 0);
-            obj.view.enableRemoveDevices(numel(devices) > 0);
         end
         
         function entitiyMap = getSelectedEntityMap(obj)
@@ -879,58 +876,6 @@ classdef DataCuratorPresenter < appbox.Presenter
                 obj.view.removeNode(node);
             end
             obj.populateEntityTree(updatedCellDatas);
-        end
-
-        function onViewRemoveDevicesFromEpochs(obj, ~, ~)
-            devices = obj.view.getSelectedDevices();
-            entitiyMap = obj.getSelectedEntityMap();
-            epochs = obj.getSelectedEpoch(entitiyMap);
-
-            inValid = isempty(epochs) || isempty(devices);
-            if inValid
-                return
-            end
-            if ~ obj.view.unSelectDevices(devices)
-                obj.view.showError('Delete the epoch, rather removing all device')
-                return
-            end
-            obj.removeDevicesFromEpochs(epochs, devices);
-            obj.plotEntityMap(entitiyMap);
-        end
-
-        function removeDevicesFromEpochs(obj, epochs, devices)
-
-            for epoch = each(epochs)
-                keys = epoch.dataLinks.keys;
-                values = epoch.dataLinks.values;
-                idx = ismember(keys, devices);
-                if any(idx)
-                    epoch.derivedAttributes('removedDevices') = containers.Map(keys(idx), values(idx));
-                    remove(epoch.dataLinks, devices);
-                end
-            end
-            obj.offlineAnalysisManager.saveCellData(epochs);
-        end
-
-        function onViewUndoRemoveDevicesFromEpochs(obj, ~, ~)
-            entitiyMap = obj.getSelectedEntityMap();
-            epochs = obj.getSelectedEpoch(entitiyMap);
-            if isempty(epochs)
-                return
-            end
-            for epoch = each(epochs)
-                if ~ isKey(epoch.derivedAttributes, 'removedDevices')
-                    continue;
-                end
-                removedDataLinks = epoch.derivedAttributes('removedDevices');
-                keys = removedDataLinks.keys;
-                values = removedDataLinks.values;
-                for index = 1 : numel(keys)
-                    epoch.dataLinks(keys{index}) = values{index};
-                end
-            end
-            obj.offlineAnalysisManager.saveCellData(epochs);
-            obj.plotEntityMap(entitiyMap);
         end
     end
 end
